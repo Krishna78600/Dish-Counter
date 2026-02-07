@@ -13,12 +13,13 @@ import {
 } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyCSmqy54aNGPmLoeBbXb2W-j7Z-MeQW1BQ",
+  authDomain: "meal-manage-81047.firebaseapp.com",
+  projectId: "meal-manage-81047",
+  storageBucket: "meal-manage-81047.firebasestorage.app",
+  messagingSenderId: "995919423248",
+  appId: "1:995919423248:web:4018fe1c85e3f3640da795",
+  measurementId: "G-0KYWEL4W47"
 };
 
 // Initialize Firebase
