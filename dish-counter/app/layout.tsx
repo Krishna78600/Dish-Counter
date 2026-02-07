@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Meal Management System",
-  description: "Employee meal management with Firebase",
+  title: "Dish Counter",
+  description: "Employee meal management by Firebase",
 };
 
 export default function RootLayout({
