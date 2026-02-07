@@ -209,17 +209,18 @@ export async function archiveYesterdayData(): Promise<{
     // Use batch to move records
     const batch = writeBatch(db);
 
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
+    querySnapshot.forEach((docSnapshot) => {
+      const data = docSnapshot.data();
 
       // Add to archive
-      batch.set(collection(db, 'archive').doc(), {
+      const newDocRef = doc(collection(db, 'archive')); // Create a new document reference in the 'archive' collection
+      batch.set(newDocRef, {
         ...data,
         archivedAt: Timestamp.now(),
       });
 
       // Delete from active
-      batch.delete(doc.ref);
+      batch.delete(docSnapshot.ref);
       archivedCount++;
     });
 
@@ -231,18 +232,23 @@ export async function archiveYesterdayData(): Promise<{
     // Update config with last archive timestamp
     const today = new Date().toISOString().split('T')[0];
     const configRef = doc(db, 'config', 'lastArchive');
-    await batch.update(configRef, {
+    const configBatch = writeBatch(db);
+    configBatch.update(configRef, {
       date: today,
       timestamp: Timestamp.now(),
     });
+    await configBatch.commit();
 
     return { success: true, archived: archivedCount };
 
   } catch (error) {
-    console.error('❌ [ARCHIVE] Error:', error);
-    return { success: false, archived: 0, error: 'Archive failed' };
-  }
+  console.error('❌ [ARCHIVE] Error:', error);
+  return { success: false, archived: 0, error: 'Archive failed' };
+ }
 }
+ 
+
+
 
 // ============================================
 // Check if archive is needed TODAY
