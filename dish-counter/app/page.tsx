@@ -132,7 +132,7 @@ export default function MealManagement() {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', fontFamily: 'Arial' }}>
       <h1>Dish Counter 🌶️🍲️</h1>
-      <h4>Emp meal mgmt powered by FireBase 🍽️ </h4>
+      <h4>Emp meal mgmt powered by FireBase </h4>
       <br></br>
       <p style={{ color: '#666', marginBottom: '0.5rem' }}>
         🔄 Real-time sync + 🗃️ Auto-archive at midnight + ☁️ Firebase
