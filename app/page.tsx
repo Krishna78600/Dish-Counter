@@ -132,7 +132,7 @@ export default function MealManagement() {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', fontFamily: 'Arial' }}>
       <h1>Samosa Man 🍲️🌶️</h1>
-      <p style={{ color: '#666'}}><h4 >Employee Meal Management</h4> </p>
+      <p style={{ color: '#666' }}><h4 >Employee Meal Management</h4> </p>
       <br></br>
       <p style={{ color: '#666', marginBottom: '0.5rem' }}>
         {/* 🔄 Real-time sync + 🗃️ Auto-archive at midnight + ☁️ Firebase */}
@@ -363,7 +363,7 @@ export default function MealManagement() {
         )}
       </div>
 
-      <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#e8f5e9', borderRadius: '4px', border: '1px solid #4caf50' }}>
+      {/* <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#e8f5e9', borderRadius: '4px', border: '1px solid #4caf50' }}>
         <details>
           <summary style={{ cursor: 'pointer', fontWeight: 'bold', color: '#2e7d32' }}>
             ℹ️ How Firebase Works (Click to expand)
@@ -391,7 +391,7 @@ export default function MealManagement() {
             </ul>
           </div>
         </details>
-      </div>
+      </div> */}
     </div>
   );
 }
