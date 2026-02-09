@@ -23,6 +23,7 @@ export default function MealManagement() {
   const [mounted, setMounted] = useState(false);
   const [lastSync, setLastSync] = useState<string>('Never');
   const [archiveStatus, setArchiveStatus] = useState<string>('Checking...');
+  const [showTodayMeals, setShowTodayMeals] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -131,8 +132,8 @@ export default function MealManagement() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', fontFamily: 'Arial' }}>
-      <h1>Samosa Man 🍲️🌶️</h1>
-      <p style={{ color: '#666' }}><h4 >Employee Meal Management</h4> </p>
+      <h1>abc🍲️🌶️</h1>
+      <h4><p style={{ color: '#666' }}>Employee Meal Management</p></h4>
       <br></br>
       <p style={{ color: '#666', marginBottom: '0.5rem' }}>
         {/* 🔄 Real-time sync + 🗃️ Auto-archive at midnight + ☁️ Firebase */}
@@ -144,9 +145,9 @@ export default function MealManagement() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
         <div style={{ border: '2px solid #4CAF50', padding: '1.5rem', borderRadius: '8px', backgroundColor: '#f1f8f4' }}>
           <h2>📝 Provide Meal</h2>
-
+          <br></br>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Employee ID:</label>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Employee Id:</label>
             <input
               type="text"
               value={employeeId}
@@ -280,38 +281,60 @@ export default function MealManagement() {
       </div>
 
       <div style={{ border: '2px solid #FF9800', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem', backgroundColor: '#fff3e0' }}>
-        <h2>📊 Today's Meals (Active Collection Only)</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ margin: 0 }}>📊 Today's Meals (Active Collection Only)</h2>
+          <button
+            onClick={() => setShowTodayMeals(!showTodayMeals)}
+            style={{
+              padding: '10px 16px',
+              backgroundColor: '#FF9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontSize: '14px',
+            }}
+          >
+            {showTodayMeals ? '🔼 Hide' : '🔽 Show'} Meals ({todayMeals.length})
+          </button>
+        </div>
+
         <p style={{ color: '#f57c00', fontSize: '12px', marginBottom: '1rem' }}>
           ⚡ Real-time - Yesterday archived at midnight
         </p>
 
-        {todayMeals.length > 0 ? (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#FF9800', color: 'white' }}>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Employee ID</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Meal Type</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Counter</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {todayMeals.map((record, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #ddd' }}>
-                  <td style={{ padding: '12px' }}><strong>{record.employeeId}</strong></td>
-                  <td style={{ padding: '12px' }}>
-                    {record.mealType === 'MORNING' ? '🌅 Morning' : '🌆 Evening'}
-                  </td>
-                  <td style={{ padding: '12px' }}>Counter {record.counterId}</td>
-                  <td style={{ padding: '12px' }}>
-                    {new Date(record.timestamp).toLocaleTimeString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p style={{ color: '#999', textAlign: 'center' }}>No meals today yet</p>
+        {showTodayMeals && (
+          <>
+            {todayMeals.length > 0 ? (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#FF9800', color: 'white' }}>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Employee Id</th>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Meal Type</th>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Counter</th> 
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {todayMeals.map((record, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #ddd' }}>
+                      <td style={{ padding: '12px' }}><strong>{record.employeeId}</strong></td>
+                      <td style={{ padding: '12px' }}>
+                        {record.mealType === 'MORNING' ? '🌅 Morning' : '🌆 Evening'}
+                      </td>
+                      <td style={{ padding: '12px' }}>Counter {record.counterId}</td>
+                      <td style={{ padding: '12px' }}>
+                        {new Date(record.timestamp).toLocaleTimeString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p style={{ color: '#999', textAlign: 'center' }}>No meals today yet</p>
+            )}
+          </>
         )}
       </div>
 
@@ -362,36 +385,6 @@ export default function MealManagement() {
           </p>
         )}
       </div>
-
-      {/* <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#e8f5e9', borderRadius: '4px', border: '1px solid #4caf50' }}>
-        <details>
-          <summary style={{ cursor: 'pointer', fontWeight: 'bold', color: '#2e7d32' }}>
-            ℹ️ How Firebase Works (Click to expand)
-          </summary>
-          <div style={{ marginTop: '1rem', fontSize: '13px', color: '#555', lineHeight: '1.6' }}>
-            <p><strong>Firebase Collections (NOT Sheets):</strong></p>
-            <ul>
-              <li>📝 active - Today's meals (for checking)</li>
-              <li>📦 archive - Historical data (backup)</li>
-              <li>⚙️ config - Settings (timestamp)</li>
-            </ul>
-            <p><strong>Daily Cycle:</strong></p>
-            <ul>
-              <li>Morning: Employee eats → Save to active</li>
-              <li>Evening: Same employee → Check active → Block</li>
-              <li>Midnight: Auto-archive runs</li>
-              <li>Tomorrow: Fresh start (active empty)</li>
-            </ul>
-            <p><strong>NO Synchronization Between Collections:</strong></p>
-            <ul>
-              <li>✅ When you save to active, only active changes</li>
-              <li>❌ Archive does NOT auto-add</li>
-              <li>❌ Config does NOT auto-update</li>
-              <li>✅ Only at midnight: active → archive + config update</li>
-            </ul>
-          </div>
-        </details>
-      </div> */}
     </div>
   );
 }
