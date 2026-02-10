@@ -13,7 +13,8 @@ import {
 } from 'firebase/firestore';
 import {
   getAuth,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
 } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -32,13 +33,24 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 
 // Authentication functions 
-// Sign up 
+// SIGN-UP
 export const signUp = async (email: string, password: string) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     return { success: true, user: userCredential.user };
   } catch (error: any) {
     console.error('Error signing up:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// LOG-IN
+export const logIn = async (email: string, password: string) => {
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    return { success: true, user: userCredential.user };
+  } catch (error: any) {
+    console.error('Error logging in:', error);
     return { success: false, error: error.message };
   }
 };
