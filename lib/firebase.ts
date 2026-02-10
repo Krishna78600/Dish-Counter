@@ -11,6 +11,10 @@ import {
   writeBatch,
   Timestamp,
 } from 'firebase/firestore';
+import {
+  getAuth,
+  createUserWithEmailAndPassword
+} from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCSmqy54aNGPmLoeBbXb2W-j7Z-MeQW1BQ",
@@ -25,6 +29,19 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const auth = getAuth(app);
+
+// Authentication functions 
+// Sign up 
+export const signUp = async (email: string, password: string) => {
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    return { success: true, user: userCredential.user };
+  } catch (error: any) {
+    console.error('Error signing up:', error);
+    return { success: false, error: error.message };
+  }
+};
 
 export interface MealRecord {
   id?: string;

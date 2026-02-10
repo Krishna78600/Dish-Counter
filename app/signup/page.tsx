@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import {signUp} from '../../lib/firebase';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
