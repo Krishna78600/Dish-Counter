@@ -16,7 +16,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  onAuthStateChanged,
+  User
 } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -77,6 +79,11 @@ export const forgotPassword = async (email: string) => {
     console.error('Error sending password reset email:', error);
     return { success: false, error: error.message };
   }
+};
+
+
+export const onAuthStateChangedCallback = (callback: (user: User | null) => void) => {
+  return onAuthStateChanged(auth, callback);
 };
 export interface MealRecord {
   id?: string;
