@@ -14,7 +14,8 @@ import {
 import {
   getAuth,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  signOut
 } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -55,6 +56,16 @@ export const logIn = async (email: string, password: string) => {
   }
 };
 
+// LOG-OUT
+export const logOut = async () => {
+  try {
+    await signOut(auth);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error logging out:', error);
+    return { success: false, error: error.message };
+  }
+};
 export interface MealRecord {
   id?: string;
   date: string;
