@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from './context/AuthContext';
+import { logOut } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 import {
   checkEmployeeExists,
   saveMealRecord,
@@ -13,24 +16,34 @@ import {
 } from '@/lib/firebase';
 
 export default function MealManagement() {
+
+  const { user , loading } = useAuth();
+  const router = useRouter();
+
   const [employeeId, setEmployeeId] = useState('');
   const [counterId, setCounterId] = useState<number>(1);
   const [mealType, setMealType] = useState<'MORNING' | 'EVENING'>('MORNING');
   const [response, setResponse] = useState('');
   const [todayMeals, setTodayMeals] = useState<MealRecord[]>([]);
   const [history, setHistory] = useState<MealRecord[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingData, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [lastSync, setLastSync] = useState<string>('Never');
   const [archiveStatus, setArchiveStatus] = useState<string>('Checking...');
   const [showTodayMeals, setShowTodayMeals] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    initializeArchiveSchedule();
-    checkAndArchive();
-    loadTodayMeals();
-  }, []);
+
+   useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    } else if (user) {
+      setMounted(true);
+      initializeArchiveSchedule();
+      checkAndArchive();
+      loadTodayMeals();
+    }
+  }, [user, loading]);
+
 
   const checkAndArchive = async () => {
     const needsArchive = await shouldArchive();
@@ -126,7 +139,12 @@ export default function MealManagement() {
     setResponse('✅ Data refreshed successfully!');
   };
 
-  if (!mounted) {
+   const handleLogout = async () => {
+    await logOut();
+    router.push('/login');
+  };
+
+  if (!mounted || loading ) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
         <div style={{ textAlign: 'center', color: 'white' }}>
@@ -139,6 +157,30 @@ export default function MealManagement() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', padding: '2rem' }}>
+
+       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#e53e3e',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+          }}
+        >
+          Logout
+        </button>
+      </div>
+
+      {user && (
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <p style={{ fontSize: '1.1rem', color: '#4a5568', fontWeight: '500' }}>
+            Welcome, {user.email}!
+          </p>
+        </div>
+      )}
       <style>{`
         * {
           margin: 0;
@@ -195,6 +237,7 @@ export default function MealManagement() {
           background-color: rgba(102, 126, 234, 0.05);
         }
       `}</style>
+
 
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         {/* Header */}
