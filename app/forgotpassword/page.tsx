@@ -2,6 +2,7 @@
 "use client";
 import { useState } from 'react';
 import Link from 'next/link';
+import {forgotPassword} from '../../lib/firebase';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
