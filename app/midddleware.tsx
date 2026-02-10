@@ -1,7 +1,7 @@
 // middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getAuth } from 'firebase/auth';
+import { getAuth , onAuthStateChanged } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 
 const auth = getAuth(app);
