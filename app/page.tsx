@@ -574,7 +574,7 @@ export default function MealManagement() {
               }}
             >
               {response ? (
-                <span style={{ fontWeight: '500', letterSpacing: '0.3px' }}>{response}</span>
+                <span style={{ fontWeight: '900', letterSpacing: '0.3px' }}>{response}</span>
               ) : (
                 <span style={{ color: '#a0aec0', fontStyle: 'italic' }}>System responses will appear here...</span>
               )}
@@ -770,6 +770,20 @@ export default function MealManagement() {
           )}
         </div>
       </div>
+      <div style={{
+  textAlign: 'center',
+  marginTop: '3rem',
+  padding: '1.5rem',
+  color: '#4c617dff',
+  fontSize: '0.9rem',
+  fontWeight: '500',
+  letterSpacing: '0.5px',
+  borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+  animation: 'slideInUp 0.6s ease-out',
+}}>
+  <h2> Crafted with ❤️ by <span style={{ color: '#000000ff', fontWeight: '600' }}>Krishna Tulaskar</span> </h2>
+</div>
+
     </div>
   );
 }
