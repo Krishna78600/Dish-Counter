@@ -48,11 +48,19 @@ export default function MealManagement() {
   const [morningCount, setMorningCount] = useState<number>(0);
   const [eveningCount, setEveningCount] = useState<number>(0);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [showScheduleSettings, setShowScheduleSettings] = useState<boolean>(false);
 
-  // useEffect(() => {
-  //   setMounted(true);
-  //   initializeApp();
-  // }, []);
+  // Set default value first (runs on server and client)
+  const [scheduledTime, setScheduledTime] = useState('19:00');
+  const [autoDownloadEnabled, setAutoDownloadEnabled] = useState(true);
+
+  // Update from localStorage only after component mounts (client-only)
+  useEffect(() => {
+    if (typeof localStorage !== 'undefined') {
+      setScheduledTime(localStorage.getItem('excelDownloadTime') || '19:00');
+      setAutoDownloadEnabled(localStorage.getItem('excelAutoDownloadEnabled') !== 'false');
+    }
+  }, []);
 
 
   // First useEffect - Initialize app on mount
@@ -927,6 +935,35 @@ export default function MealManagement() {
                 📥 Download Excel Report
               </button>
 
+
+              {/* Settings Button */}
+              <button
+                onClick={() => setShowScheduleSettings(!showScheduleSettings)}
+                style={{
+                  width: '100%',
+                  padding: '0.875rem 1.5rem',
+                  background: 'linear-gradient(135deg, #6C63FF 0%, #5A4CB8 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '1rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  letterSpacing: '0.5px',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(108, 99, 255, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                ⚙️ Schedule Settings
+              </button>
+
             </div>
           </div>
 
@@ -980,6 +1017,169 @@ export default function MealManagement() {
             </div>
           </div>
         </div>
+
+
+        {/* Schedule Settings Modal */}
+        {showScheduleSettings ? (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+            }}
+          >
+            <div
+              style={{
+                background: 'white',
+                borderRadius: '20px',
+                padding: '2rem',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+                maxWidth: '400px',
+                width: '90%',
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: '1.5rem',
+                  color: '#1a202c',
+                  marginBottom: '1.5rem',
+                }}
+              >
+                ⚙️ Automatic Download Schedule
+              </h3>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    marginBottom: '0.7rem',
+                    fontWeight: '600',
+                    color: '#2d3748',
+                  }}
+                >
+                  Enable Automatic Download:
+                </label>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={autoDownloadEnabled}
+                    onChange={(e) => {
+                      setAutoDownloadEnabled(e.target.checked);
+                      if (typeof localStorage !== 'undefined') {
+                        localStorage.setItem(
+                          'excelAutoDownloadEnabled',
+                          String(e.target.checked)
+                        );
+                      }
+                      if (e.target.checked) {
+                        scheduleAutomaticDownload();
+                      }
+                    }}
+                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                  />
+                  <span style={{ color: '#2d3748' }}>
+                    {autoDownloadEnabled ? '✅ Enabled' : '❌ Disabled'}
+                  </span>
+                </label>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    marginBottom: '0.7rem',
+                    fontWeight: '600',
+                    color: '#2d3748',
+                  }}
+                >
+                  Download Time (24-hour format):
+                </label>
+                <input
+                  type="time"
+                  value={scheduledTime}
+                  onChange={(e) => {
+                    setScheduledTime(e.target.value);
+                    if (typeof localStorage !== 'undefined') {
+                      localStorage.setItem('excelDownloadTime', e.target.value);
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '2px solid #e2e8f0',
+                    borderRadius: '12px',
+                    fontSize: '1rem',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <p
+                  style={{
+                    fontSize: '0.85rem',
+                    color: '#a0aec0',
+                    marginTop: '0.5rem',
+                  }}
+                >
+                  Current time:{' '}
+                  {new Date().toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  onClick={() => setShowScheduleSettings(false)}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    background: '#e2e8f0',
+                    color: '#2d3748',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setShowScheduleSettings(false);
+                    scheduleAutomaticDownload();
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    background: 'linear-gradient(135deg, #27AE60 0%, #229954 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Save & Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {/* NEW: Meal Count Statistics Section */}
         <div style={{
