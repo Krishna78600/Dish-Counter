@@ -10,6 +10,8 @@ import {
   doc,
   writeBatch,
   Timestamp,
+  getDoc,
+  setDoc,
 } from 'firebase/firestore';
 import {
   getAuth,
@@ -313,32 +315,58 @@ export async function archiveYesterdayData(): Promise<{
 // ============================================
 // Check if archive is needed TODAY
 // ============================================
+// export async function shouldArchive(): Promise<boolean> {
+//   try {
+//     const configRef = doc(db, 'config', 'lastArchive');
+//     const configSnap = await getDocs(query(collection(db, 'config')));
+
+//     let lastArchiveDate = null;
+//     configSnap.forEach((doc) => {
+//       if (doc.id === 'lastArchive') {
+//         lastArchiveDate = doc.data().date;
+//       }
+//     });
+
+//     const today = new Date().toISOString().split('T')[0];
+
+//     if (!lastArchiveDate || lastArchiveDate !== today) {
+//       console.log(`⏰ [CHECK] Archive needed (Last: ${lastArchiveDate}, Today: ${today})`);
+//       return true;
+//     }
+
+//     return false;
+
+//   } catch (error) {
+//     console.error('[CHECK] Error:', error);
+//     return false;
+//   }
+// }
+
 export async function shouldArchive(): Promise<boolean> {
   try {
-    const configRef = doc(db, 'config', 'lastArchive');
-    const configSnap = await getDocs(query(collection(db, 'config')));
+    const configRef = doc(db, 'config', 'lastArchive');  
+    const configSnap = await getDoc(configRef);
 
-    let lastArchiveDate = null;
-    configSnap.forEach((doc) => {
-      if (doc.id === 'lastArchive') {
-        lastArchiveDate = doc.data().date;
-      }
-    });
-
-    const today = new Date().toISOString().split('T')[0];
-
-    if (!lastArchiveDate || lastArchiveDate !== today) {
-      console.log(`⏰ [CHECK] Archive needed (Last: ${lastArchiveDate}, Today: ${today})`);
+    if (!configSnap.exists()) {
+      await setDoc(configRef, {
+        lastArchiveDate: new Date().toLocaleDateString(),
+      });
+      console.log('✅ Created lastArchive document');
       return true;
     }
 
-    return false;
-
+    const lastArchiveDate = configSnap.data()?.lastArchiveDate;
+    const today = new Date().toLocaleDateString();
+    
+    return lastArchiveDate !== today;
   } catch (error) {
-    console.error('[CHECK] Error:', error);
+    console.error('❌ Archive check error:', error);
     return false;
   }
 }
+
+
+
 
 // ============================================
 // Initialize archive schedule (midnight)

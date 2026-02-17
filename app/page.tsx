@@ -57,7 +57,7 @@ export default function MealManagement() {
   // Update from localStorage only after component mounts (client-only)
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
-      setScheduledTime(localStorage.getItem('excelDownloadTime') || '19:00');
+      setScheduledTime(localStorage.getItem('excelDownloadTime') || '16:24');
       setAutoDownloadEnabled(localStorage.getItem('excelAutoDownloadEnabled') !== 'false');
     }
   }, []);
@@ -81,9 +81,9 @@ export default function MealManagement() {
 
   const initializeApp = async () => {
     try {
-      if (firebase?.initializeArchiveSchedule) {
-        firebase.initializeArchiveSchedule();
-      }
+      // if (firebase?.initializeArchiveSchedule) {
+      //   firebase.initializeArchiveSchedule();
+      // }
       await checkAndArchive();
       await loadTodayMeals();
     } catch (error) {
