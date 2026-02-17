@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
+import * as XLSX from 'xlsx';
 // Mock types for Firebase (if actual Firebase import fails)
 interface MealRecord {
   employeeId: string;
@@ -219,6 +219,151 @@ export default function MealManagement() {
       setResponse(`📋 Showing ${records.length} past meal records for ${employeeId}`);
     } catch (error: any) {
       setResponse(`❌ ${error.message || 'An error occurred'}`);
+    }
+  };
+
+  const downloadExcel = async () => {
+    try {
+      // Fetch all today's meals
+      if (!firebase?.getTodayMeals) {
+        setResponse('❌ Firebase not configured');
+        return;
+      }
+
+      const allMeals = await firebase.getTodayMeals();
+
+      // Separate morning and evening meals
+      const morningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'MORNING');
+      const eveningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'EVENING');
+
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+
+      // ========== SUMMARY SHEET ==========
+      const summaryData = [
+        ['MEAL MANAGEMENT REPORT'],
+        ['Date:', new Date().toLocaleDateString()],
+        [''],
+        ['Summary Statistics'],
+        ['Morning Meals:', morningMeals.length],
+        ['Evening Meals:', eveningMeals.length],
+        ['Total Employees Fed:', morningMeals.length + eveningMeals.length],
+      ];
+
+      const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+      summaryWs['!cols'] = [{ wch: 25 }, { wch: 15 }];
+      XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+
+      // ========== MORNING SHEET ==========
+      const morningHeaders = ['Employee ID', 'Counter', 'Time', 'Date'];
+      const morningRows = morningMeals.map((meal: MealRecord) => [
+        meal.employeeId,
+        meal.counterId,
+        new Date(meal.timestamp).toLocaleTimeString(),
+        meal.date || new Date(meal.timestamp).toLocaleDateString(),
+      ]);
+
+      const morningData = [morningHeaders, ...morningRows];
+      const morningWs = XLSX.utils.aoa_to_sheet(morningData);
+
+      // Style morning sheet
+      morningWs['!cols'] = [{ wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 15 }];
+
+      // Add header styling
+      const headerStyle = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: 'FFB84D' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+      };
+
+      for (let i = 0; i < morningHeaders.length; i++) {
+        const cellRef = XLSX.utils.encode_col(i) + '1';
+        if (morningWs[cellRef]) {
+          morningWs[cellRef].s = headerStyle;
+        }
+      }
+
+      XLSX.utils.book_append_sheet(wb, morningWs, 'Morning Meals');
+
+      // ========== EVENING SHEET ==========
+      const eveningHeaders = ['Employee ID', 'Counter', 'Time', 'Date'];
+      const eveningRows = eveningMeals.map((meal: MealRecord) => [
+        meal.employeeId,
+        meal.counterId,
+        new Date(meal.timestamp).toLocaleTimeString(),
+        meal.date || new Date(meal.timestamp).toLocaleDateString(),
+      ]);
+
+      const eveningData = [eveningHeaders, ...eveningRows];
+      const eveningWs = XLSX.utils.aoa_to_sheet(eveningData);
+
+      // Style evening sheet
+      eveningWs['!cols'] = [{ wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 15 }];
+
+      // Add header styling
+      const eveningHeaderStyle = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: 'FF6B35' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+      };
+
+      for (let i = 0; i < eveningHeaders.length; i++) {
+        const cellRef = XLSX.utils.encode_col(i) + '1';
+        if (eveningWs[cellRef]) {
+          eveningWs[cellRef].s = eveningHeaderStyle;
+        }
+      }
+
+      XLSX.utils.book_append_sheet(wb, eveningWs, 'Evening Meals');
+
+      // ========== COMBINED SHEET ==========
+      const combinedHeaders = ['Meal Type', 'Employee ID', 'Counter', 'Time', 'Date'];
+      const combinedRows = [
+        ...morningMeals.map((meal: MealRecord) => [
+          'MORNING',
+          meal.employeeId,
+          meal.counterId,
+          new Date(meal.timestamp).toLocaleTimeString(),
+          meal.date || new Date(meal.timestamp).toLocaleDateString(),
+        ]),
+        ...eveningMeals.map((meal: MealRecord) => [
+          'EVENING',
+          meal.employeeId,
+          meal.counterId,
+          new Date(meal.timestamp).toLocaleTimeString(),
+          meal.date || new Date(meal.timestamp).toLocaleDateString(),
+        ]),
+      ];
+
+      const combinedData = [combinedHeaders, ...combinedRows];
+      const combinedWs = XLSX.utils.aoa_to_sheet(combinedData);
+
+      // Style combined sheet
+      combinedWs['!cols'] = [{ wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 15 }];
+
+      // Add header styling
+      const combinedHeaderStyle = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '455A64' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+      };
+
+      for (let i = 0; i < combinedHeaders.length; i++) {
+        const cellRef = XLSX.utils.encode_col(i) + '1';
+        if (combinedWs[cellRef]) {
+          combinedWs[cellRef].s = combinedHeaderStyle;
+        }
+      }
+
+      XLSX.utils.book_append_sheet(wb, combinedWs, 'All Meals');
+
+      // ========== DOWNLOAD ==========
+      const fileName = `Meal_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      setResponse(`✅ Excel file downloaded successfully!\nFile: ${fileName}\nMorning: ${morningMeals.length} | Evening: ${eveningMeals.length}`);
+    } catch (error: any) {
+      setResponse(`❌ ${error.message || 'Error downloading Excel'}`);
     }
   };
 
@@ -554,6 +699,35 @@ export default function MealManagement() {
               >
                 🔄 Manual Sync
               </button>
+
+
+              <button
+                onClick={downloadExcel}
+                style={{
+                  width: '100%',
+                  padding: '0.875rem 1.5rem',
+                  background: 'linear-gradient(135deg, #56de8fff 0%, #229954 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '1rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  letterSpacing: '0.5px',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(39, 174, 96, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                📥 Download Excel Report
+              </button>
+
             </div>
           </div>
 
