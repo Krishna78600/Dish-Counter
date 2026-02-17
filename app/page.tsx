@@ -57,19 +57,22 @@ export default function MealManagement() {
   // Update from localStorage only after component mounts (client-only)
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
-      setScheduledTime(localStorage.getItem('excelDownloadTime') || '16:24');
-      setAutoDownloadEnabled(localStorage.getItem('excelAutoDownloadEnabled') !== 'false');
+      const savedTime = localStorage.getItem('excelDownloadTime');
+      const savedEnabled = localStorage.getItem('excelAutoDownloadEnabled');
+
+      if (savedTime) setScheduledTime(savedTime);
+      if (savedEnabled !== null) setAutoDownloadEnabled(savedEnabled !== 'false');
     }
   }, []);
 
-
-  // First useEffect - Initialize app on mount
+  // ✅ SECOND - Initialize scheduler (after localStorage ready)
   useEffect(() => {
     setMounted(true);
     initializeApp();
 
-    // NEW: Schedule automatic daily download
-    scheduleAutomaticDownload();
+    setTimeout(() => {
+      scheduleAutomaticDownload();
+    }, 100);
   }, []);
 
 
