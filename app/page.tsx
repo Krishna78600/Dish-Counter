@@ -396,7 +396,7 @@ export default function MealManagement() {
       const minutes = now.getMinutes();
 
       // Get saved time from localStorage (default: 7 PM = 19:00)
-      const savedTime = localStorage.getItem('excelDownloadTime') || '15:10';
+      const savedTime = localStorage.getItem('excelDownloadTime') || '15:15';
       const [targetHours, targetMinutes] = savedTime.split(':').map(Number);
 
       // Check if current time matches target time (within 1-minute window)
@@ -414,13 +414,14 @@ export default function MealManagement() {
     };
 
     // Check every minute
+    // const intervalId = setInterval(checkAndDownload, 60000);
     const intervalId = setInterval(checkAndDownload, 60000);
 
     // Also check immediately on load
     checkAndDownload();
 
     // Store interval ID for cleanup if needed
-    window.excelDownloadIntervalId = intervalId;
+    // window.excelDownloadIntervalId = intervalId;
   };
 
   const performAutomaticDownload = async () => {
