@@ -54,6 +54,12 @@ export default function MealManagement() {
     initializeApp();
   }, []);
 
+  useEffect(() => {
+    if (todayMeals.length > 0 || mounted) {
+      calculateMealCounts();
+    }
+  }, [todayMeals, mounted]);
+
   const initializeApp = async () => {
     try {
       if (firebase?.initializeArchiveSchedule) {
@@ -61,7 +67,6 @@ export default function MealManagement() {
       }
       await checkAndArchive();
       await loadTodayMeals();
-      calculateMealCounts();
     } catch (error) {
       console.error('Error initializing app:', error);
       setArchiveStatus('⚠️ Firebase not configured');
@@ -156,7 +161,6 @@ export default function MealManagement() {
         );
         setEmployeeId('');
         await loadTodayMeals();
-        calculateMealCounts();
       } else {
         setResponse(`❌ ${result.error}`);
       }
@@ -220,7 +224,6 @@ export default function MealManagement() {
 
   const handleManualSync = async () => {
     await loadTodayMeals();
-    calculateMealCounts();
     setResponse('✅ Data refreshed successfully!');
   };
 
