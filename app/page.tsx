@@ -49,10 +49,21 @@ export default function MealManagement() {
   const [eveningCount, setEveningCount] = useState<number>(0);
   const [totalCount, setTotalCount] = useState<number>(0);
 
+  // useEffect(() => {
+  //   setMounted(true);
+  //   initializeApp();
+  // }, []);
+
+
+  // First useEffect - Initialize app on mount
   useEffect(() => {
     setMounted(true);
     initializeApp();
+
+    // NEW: Schedule automatic daily download
+    scheduleAutomaticDownload();
   }, []);
+
 
   useEffect(() => {
     if (todayMeals.length > 0 || mounted) {
@@ -366,6 +377,193 @@ export default function MealManagement() {
       setResponse(`❌ ${error.message || 'Error downloading Excel'}`);
     }
   };
+
+  // ========================================================================================
+
+  // Auto download
+  const scheduleAutomaticDownload = () => {
+    // Check if automatic download is enabled
+    const isScheduleEnabled = localStorage.getItem('excelAutoDownloadEnabled') !== 'false';
+
+    if (!isScheduleEnabled) {
+      console.log('📊 Automatic Excel download is disabled');
+      return;
+    }
+
+    const checkAndDownload = () => {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+
+      // Get saved time from localStorage (default: 7 PM = 19:00)
+      const savedTime = localStorage.getItem('excelDownloadTime') || '15:10';
+      const [targetHours, targetMinutes] = savedTime.split(':').map(Number);
+
+      // Check if current time matches target time (within 1-minute window)
+      if (hours === targetHours && minutes === targetMinutes) {
+        // Check if download already happened today
+        const today = new Date().toLocaleDateString();
+        const lastDownloadDate = localStorage.getItem('lastExcelDownloadDate');
+
+        if (lastDownloadDate !== today) {
+          console.log(`📊 Starting automatic Excel download at ${hours}:${minutes}...`);
+          performAutomaticDownload();
+          localStorage.setItem('lastExcelDownloadDate', today);
+        }
+      }
+    };
+
+    // Check every minute
+    const intervalId = setInterval(checkAndDownload, 60000);
+
+    // Also check immediately on load
+    checkAndDownload();
+
+    // Store interval ID for cleanup if needed
+    window.excelDownloadIntervalId = intervalId;
+  };
+
+  const performAutomaticDownload = async () => {
+    try {
+      if (!firebase?.getTodayMeals) {
+        console.error('❌ Firebase not configured for automatic download');
+        return;
+      }
+
+      const allMeals = await firebase.getTodayMeals();
+
+      if (allMeals.length === 0) {
+        console.log('⚠️ No meal data to download');
+        return;
+      }
+
+      const morningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'MORNING');
+      const eveningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'EVENING');
+
+      // Create workbook (same as manual download)
+      const wb = XLSX.utils.book_new();
+
+      // ========== SUMMARY SHEET ==========
+      const summaryData = [
+        ['MEAL MANAGEMENT REPORT'],
+        ['Date:', new Date().toLocaleDateString()],
+        [''],
+        ['Summary Statistics'],
+        ['Morning Meals:', morningMeals.length],
+        ['Evening Meals:', eveningMeals.length],
+        ['Total Employees Fed:', morningMeals.length + eveningMeals.length],
+      ];
+
+      const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+      summaryWs['!cols'] = [{ wch: 25 }, { wch: 15 }];
+      XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+
+      // ========== MORNING SHEET ==========
+      const morningHeaders = ['Employee ID', 'Counter', 'Time', 'Date'];
+      const morningRows = morningMeals.map((meal: MealRecord) => [
+        meal.employeeId,
+        meal.counterId,
+        new Date(meal.timestamp).toLocaleTimeString(),
+        meal.date || new Date(meal.timestamp).toLocaleDateString(),
+      ]);
+
+      const morningData = [morningHeaders, ...morningRows];
+      const morningWs = XLSX.utils.aoa_to_sheet(morningData);
+      morningWs['!cols'] = [{ wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 15 }];
+
+      const morningHeaderStyle = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: 'FFB84D' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+      };
+
+      for (let i = 0; i < morningHeaders.length; i++) {
+        const cellRef = XLSX.utils.encode_col(i) + '1';
+        if (morningWs[cellRef]) {
+          morningWs[cellRef].s = morningHeaderStyle;
+        }
+      }
+
+      XLSX.utils.book_append_sheet(wb, morningWs, 'Morning Meals');
+
+      // ========== EVENING SHEET ==========
+      const eveningHeaders = ['Employee ID', 'Counter', 'Time', 'Date'];
+      const eveningRows = eveningMeals.map((meal: MealRecord) => [
+        meal.employeeId,
+        meal.counterId,
+        new Date(meal.timestamp).toLocaleTimeString(),
+        meal.date || new Date(meal.timestamp).toLocaleDateString(),
+      ]);
+
+      const eveningData = [eveningHeaders, ...eveningRows];
+      const eveningWs = XLSX.utils.aoa_to_sheet(eveningData);
+      eveningWs['!cols'] = [{ wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 15 }];
+
+      const eveningHeaderStyle = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: 'FF6B35' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+      };
+
+      for (let i = 0; i < eveningHeaders.length; i++) {
+        const cellRef = XLSX.utils.encode_col(i) + '1';
+        if (eveningWs[cellRef]) {
+          eveningWs[cellRef].s = eveningHeaderStyle;
+        }
+      }
+
+      XLSX.utils.book_append_sheet(wb, eveningWs, 'Evening Meals');
+
+      // ========== COMBINED SHEET ==========
+      const combinedHeaders = ['Meal Type', 'Employee ID', 'Counter', 'Time', 'Date'];
+      const combinedRows = [
+        ...morningMeals.map((meal: MealRecord) => [
+          'MORNING',
+          meal.employeeId,
+          meal.counterId,
+          new Date(meal.timestamp).toLocaleTimeString(),
+          meal.date || new Date(meal.timestamp).toLocaleDateString(),
+        ]),
+        ...eveningMeals.map((meal: MealRecord) => [
+          'EVENING',
+          meal.employeeId,
+          meal.counterId,
+          new Date(meal.timestamp).toLocaleTimeString(),
+          meal.date || new Date(meal.timestamp).toLocaleDateString(),
+        ]),
+      ];
+
+      const combinedData = [combinedHeaders, ...combinedRows];
+      const combinedWs = XLSX.utils.aoa_to_sheet(combinedData);
+      combinedWs['!cols'] = [{ wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 15 }];
+
+      const combinedHeaderStyle = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '455A64' } },
+        alignment: { horizontal: 'center', vertical: 'center' },
+      };
+
+      for (let i = 0; i < combinedHeaders.length; i++) {
+        const cellRef = XLSX.utils.encode_col(i) + '1';
+        if (combinedWs[cellRef]) {
+          combinedWs[cellRef].s = combinedHeaderStyle;
+        }
+      }
+
+      XLSX.utils.book_append_sheet(wb, combinedWs, 'All Meals');
+
+      // ========== DOWNLOAD ==========
+      const fileName = `Meal_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      console.log(`✅ Automatic Excel download completed: ${fileName}`);
+      console.log(`📊 Morning: ${morningMeals.length} | Evening: ${eveningMeals.length}`);
+    } catch (error: any) {
+      console.error(`❌ Automatic download error: ${error.message}`);
+    }
+  };
+  //===============================================================
+
 
   const handleManualSync = async () => {
     await loadTodayMeals();
