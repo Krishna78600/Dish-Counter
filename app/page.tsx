@@ -45,6 +45,9 @@ export default function MealManagement() {
   const [lastSync, setLastSync] = useState<string>('Never');
   const [archiveStatus, setArchiveStatus] = useState<string>('Checking...');
   const [showTodayMeals, setShowTodayMeals] = useState(false);
+  const [morningCount, setMorningCount] = useState<number>(0);
+  const [eveningCount, setEveningCount] = useState<number>(0);
+  const [totalCount, setTotalCount] = useState<number>(0);
 
   useEffect(() => {
     setMounted(true);
@@ -58,6 +61,7 @@ export default function MealManagement() {
       }
       await checkAndArchive();
       await loadTodayMeals();
+      calculateMealCounts();
     } catch (error) {
       console.error('Error initializing app:', error);
       setArchiveStatus('⚠️ Firebase not configured');
@@ -95,6 +99,23 @@ export default function MealManagement() {
       console.error('Error loading meals:', error);
     }
     setLastSync(new Date().toLocaleTimeString());
+  };
+
+  const calculateMealCounts = () => {
+    let morning = 0;
+    let evening = 0;
+
+    todayMeals.forEach((meal) => {
+      if (meal.mealType === 'MORNING') {
+        morning += 1;
+      } else if (meal.mealType === 'EVENING') {
+        evening += 1;
+      }
+    });
+
+    setMorningCount(morning);
+    setEveningCount(evening);
+    setTotalCount(morning + evening);
   };
 
   const handleProvideMeal = async () => {
@@ -135,6 +156,7 @@ export default function MealManagement() {
         );
         setEmployeeId('');
         await loadTodayMeals();
+        calculateMealCounts();
       } else {
         setResponse(`❌ ${result.error}`);
       }
@@ -198,6 +220,7 @@ export default function MealManagement() {
 
   const handleManualSync = async () => {
     await loadTodayMeals();
+    calculateMealCounts();
     setResponse('✅ Data refreshed successfully!');
   };
 
@@ -334,14 +357,14 @@ export default function MealManagement() {
             transition: 'transform 0.3s ease, box-shadow 0.3s ease',
             backdropFilter: 'blur(10px)',
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 30px 80px rgba(255, 159, 67, 0.2)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 20px 100px rgba(0, 0, 0, 0.1)';
-          }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 30px 80px rgba(255, 159, 67, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 20px 100px rgba(0, 0, 0, 0.1)';
+            }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
               <span style={{ fontSize: '1.8rem' }}>📝</span>
@@ -543,14 +566,14 @@ export default function MealManagement() {
             transition: 'transform 0.3s ease, box-shadow 0.3s ease',
             backdropFilter: 'blur(10px)',
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 30px 80px rgba(255, 159, 67, 0.2)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 20px 100px rgba(0, 0, 0, 0.1)';
-          }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 30px 80px rgba(255, 159, 67, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 20px 100px rgba(0, 0, 0, 0.1)';
+            }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
               <span style={{ fontSize: '1.8rem' }}>📢</span>
@@ -582,6 +605,141 @@ export default function MealManagement() {
           </div>
         </div>
 
+        {/* NEW: Meal Count Statistics Section */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(255, 159, 67, 0.1) 0%, rgba(255, 165, 0, 0.05) 100%)',
+          borderRadius: '20px',
+          padding: '2rem',
+          marginBottom: '2rem',
+          border: '2px solid rgba(255, 159, 67, 0.3)',
+          boxShadow: '0 20px 100px rgba(0, 0, 0, 0.08)',
+          backdropFilter: 'blur(10px)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+            <span style={{ fontSize: '2rem' }}>📊</span>
+            <h2 style={{ fontSize: '1.8rem', margin: 0, color: '#1a202c', fontWeight: '700' }}>
+              Today's Meal Count
+            </h2>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '1.5rem',
+          }}>
+            {/* Morning Count Card */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              borderRadius: '16px',
+              padding: '1.5rem',
+              border: '2px solid #ffd89b',
+              boxShadow: '0 8px 24px rgba(255, 159, 67, 0.15)',
+              textAlign: 'center',
+              transition: 'all 0.3s ease',
+            }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 16px 40px rgba(255, 159, 67, 0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 159, 67, 0.15)';
+              }}
+            >
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🌅</div>
+              <p style={{ fontSize: '0.9rem', color: '#a0aec0', margin: '0 0 0.5rem 0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Morning Meals
+              </p>
+              <p style={{
+                fontSize: '2.8rem',
+                color: '#ff9f43',
+                margin: 0,
+                fontWeight: '700',
+                letterSpacing: '-1px',
+              }}>
+                {morningCount}
+              </p>
+              <p style={{ fontSize: '0.8rem', color: '#cbd5e0', margin: '0.5rem 0 0 0' }}>
+                Employees
+              </p>
+            </div>
+
+            {/* Evening Count Card */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              borderRadius: '16px',
+              padding: '1.5rem',
+              border: '2px solid #ffd89b',
+              boxShadow: '0 8px 24px rgba(255, 159, 67, 0.15)',
+              textAlign: 'center',
+              transition: 'all 0.3s ease',
+            }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 16px 40px rgba(255, 159, 67, 0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 159, 67, 0.15)';
+              }}
+            >
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🌆</div>
+              <p style={{ fontSize: '0.9rem', color: '#a0aec0', margin: '0 0 0.5rem 0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Evening Meals
+              </p>
+              <p style={{
+                fontSize: '2.8rem',
+                color: '#ff9f43',
+                margin: 0,
+                fontWeight: '700',
+                letterSpacing: '-1px',
+              }}>
+                {eveningCount}
+              </p>
+              <p style={{ fontSize: '0.8rem', color: '#cbd5e0', margin: '0.5rem 0 0 0' }}>
+                Employees
+              </p>
+            </div>
+
+            {/* Total Count Card */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(255, 159, 67, 0.2) 0%, rgba(255, 165, 0, 0.15) 100%)',
+              borderRadius: '16px',
+              padding: '1.5rem',
+              border: '2px solid #ff9f43',
+              boxShadow: '0 8px 24px rgba(255, 159, 67, 0.25)',
+              textAlign: 'center',
+              transition: 'all 0.3s ease',
+            }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 16px 40px rgba(255, 159, 67, 0.35)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 159, 67, 0.25)';
+              }}
+            >
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📈</div>
+              <p style={{ fontSize: '0.9rem', color: '#a0aec0', margin: '0 0 0.5rem 0', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Total Today
+              </p>
+              <p style={{
+                fontSize: '2.8rem',
+                color: '#ff9f43',
+                margin: 0,
+                fontWeight: '700',
+                letterSpacing: '-1px',
+              }}>
+                {totalCount}
+              </p>
+              <p style={{ fontSize: '0.8rem', color: '#cbd5e0', margin: '0.5rem 0 0 0' }}>
+                Employees
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Today's Meals Section */}
         <div style={{
           background: 'rgba(255, 255, 255, 0.95)',
@@ -593,14 +751,14 @@ export default function MealManagement() {
           transition: 'transform 0.3s ease, box-shadow 0.3s ease',
           backdropFilter: 'blur(10px)',
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-4px)';
-          e.currentTarget.style.boxShadow = '0 30px 80px rgba(255, 159, 67, 0.2)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 20px 100px rgba(0, 0, 0, 0.1)';
-        }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)';
+            e.currentTarget.style.boxShadow = '0 30px 80px rgba(255, 159, 67, 0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 20px 100px rgba(0, 0, 0, 0.1)';
+          }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -689,14 +847,14 @@ export default function MealManagement() {
           transition: 'transform 0.3s ease, box-shadow 0.3s ease',
           backdropFilter: 'blur(10px)',
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-4px)';
-          e.currentTarget.style.boxShadow = '0 30px 80px rgba(255, 159, 67, 0.2)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 20px 100px rgba(0, 0, 0, 0.1)';
-        }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-4px)';
+            e.currentTarget.style.boxShadow = '0 30px 80px rgba(255, 159, 67, 0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 20px 100px rgba(0, 0, 0, 0.1)';
+          }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
             <span style={{ fontSize: '1.8rem' }}>📋</span>
@@ -771,18 +929,18 @@ export default function MealManagement() {
         </div>
       </div>
       <div style={{
-  textAlign: 'center',
-  marginTop: '3rem',
-  padding: '1.5rem',
-  color: '#4c617dff',
-  fontSize: '0.9rem',
-  fontWeight: '500',
-  letterSpacing: '0.5px',
-  borderTop: '1px solid rgba(255, 255, 255, 0.3)',
-  animation: 'slideInUp 0.6s ease-out',
-}}>
-  <h2> Crafted with ❤️ by <span style={{ color: '#000000ff', fontWeight: '600' }}>Krishna Tulaskar</span> </h2>
-</div>
+        textAlign: 'center',
+        marginTop: '3rem',
+        padding: '1.5rem',
+        color: '#4c617dff',
+        fontSize: '0.9rem',
+        fontWeight: '500',
+        letterSpacing: '0.5px',
+        borderTop: '1px solid rgba(255, 255, 255, 0.3)',
+        animation: 'slideInUp 0.6s ease-out',
+      }}>
+        <h2> Crafted with ❤️ by <span style={{ color: '#000000ff', fontWeight: '600' }}>Krishna Tulaskar</span> </h2>
+      </div>
 
     </div>
   );
