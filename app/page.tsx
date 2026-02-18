@@ -66,13 +66,39 @@ export default function MealManagement() {
   }, []);
 
   // ✅ SECOND - Initialize scheduler (after localStorage ready)
+  // useEffect(() => {
+  //   setMounted(true);
+  //   initializeApp();
+
+  //   setTimeout(() => {
+  //     scheduleAutomaticDownload();
+  //   }, 100);
+  // }, []);
+
+
   useEffect(() => {
     setMounted(true);
     initializeApp();
 
-    setTimeout(() => {
+    // ✅ Load localStorage values
+    if (typeof localStorage !== 'undefined') {
+      const savedTime = localStorage.getItem('excelDownloadTime');
+      const savedEnabled = localStorage.getItem('excelAutoDownloadEnabled');
+
+      console.log('📂 [INIT] Loading from localStorage:', { savedTime, savedEnabled });
+
+      if (savedTime) setScheduledTime(savedTime);
+      if (savedEnabled !== null) setAutoDownloadEnabled(savedEnabled !== 'false');
+    }
+
+    // ✅ Start scheduler after a small delay
+    const timeoutId = setTimeout(() => {
+      console.log('⏱️ [INIT] Starting scheduler...');
       scheduleAutomaticDownload();
-    }, 100);
+    }, 500);
+
+    // Cleanup timeout if component unmounts
+    return () => clearTimeout(timeoutId);
   }, []);
 
 
@@ -391,58 +417,94 @@ export default function MealManagement() {
 
   // ========================================================================================
 
-  // Auto download
   const scheduleAutomaticDownload = () => {
-    // Check if automatic download is enabled
-    const isScheduleEnabled = localStorage.getItem('excelAutoDownloadEnabled') !== 'false';
+    console.log('🔍 [SCHEDULER] Initializing...');
 
-    if (!isScheduleEnabled) {
-      console.log('📊 Automatic Excel download is disabled');
+    if (typeof localStorage === 'undefined') {
+      console.log('❌ localStorage not available');
       return;
     }
+
+    // ✅ ALWAYS read fresh from localStorage
+    const readSettings = () => {
+      const enabled = localStorage.getItem('excelAutoDownloadEnabled') !== 'false';
+      const time = localStorage.getItem('excelDownloadTime') || '19:00';
+      return { enabled, time };
+    };
+
+    const { enabled, time } = readSettings();
+
+    console.log('📊 [SCHEDULER] Settings:', { enabled, time });
+
+    if (!enabled) {
+      console.log('⚠️ [SCHEDULER] Automatic download disabled');
+      return;
+    }
+
+    const [targetHours, targetMinutes] = time.split(':').map(Number);
+    console.log(`⏰ [SCHEDULER] Target time: ${targetHours}:${targetMinutes.toString().padStart(2, '0')}`);
+
+    // ✅ CREATE A PERSISTENT CHECKER FUNCTION
+    let lastCheckedMinute = -1;
 
     const checkAndDownload = () => {
       const now = new Date();
       const hours = now.getHours();
       const minutes = now.getMinutes();
+      const seconds = now.getSeconds();
 
-      // Get saved time from localStorage (default: 7 PM = 19:00)
-      const savedTime = localStorage.getItem('excelDownloadTime') || '15:15';
-      const [targetHours, targetMinutes] = savedTime.split(':').map(Number);
-
-      // Check if current time matches target time (within 1-minute window)
+      // ✅ Check if within the target minute (any second in that minute)
       if (hours === targetHours && minutes === targetMinutes) {
-        // Check if download already happened today
-        const today = new Date().toLocaleDateString();
-        const lastDownloadDate = localStorage.getItem('lastExcelDownloadDate');
+        // Only log/download once per minute
+        if (lastCheckedMinute !== minutes) {
+          const today = new Date().toLocaleDateString();
+          const lastDownloadDate = localStorage.getItem('lastExcelDownloadDate');
 
-        if (lastDownloadDate !== today) {
-          console.log(`📊 Starting automatic Excel download at ${hours}:${minutes}...`);
-          performAutomaticDownload();
-          localStorage.setItem('lastExcelDownloadDate', today);
+          console.log(`🔔 [SCHEDULER] Time matched! ${hours}:${minutes.toString().padStart(2, '0')}`);
+          console.log(`📅 [SCHEDULER] Last download: ${lastDownloadDate}, Today: ${today}`);
+
+          if (lastDownloadDate !== today) {
+            console.log(`✅ [SCHEDULER] Starting download NOW!`);
+            performAutomaticDownload();
+            localStorage.setItem('lastExcelDownloadDate', today);
+            lastCheckedMinute = minutes;
+          } else {
+            console.log(`⚠️ [SCHEDULER] Already downloaded today`);
+          }
+        }
+      } else {
+        // Reset when we're past the target minute
+        if (minutes !== targetMinutes) {
+          lastCheckedMinute = -1;
         }
       }
     };
 
-    // Check every minute
-    // const intervalId = setInterval(checkAndDownload, 60000);
-    const intervalId = setInterval(checkAndDownload, 60000);
-
-    // Also check immediately on load
+    // ✅ Check immediately
     checkAndDownload();
 
-    // Store interval ID for cleanup if needed
-    // window.excelDownloadIntervalId = intervalId;
+    // ✅ Check every 10 seconds (more responsive than 60 seconds)
+    const intervalId = setInterval(checkAndDownload, 10000);
+
+    // Store globally so we can clear it later
+    if (typeof window !== 'undefined') {
+      (window as any).excelDownloadIntervalId = intervalId;
+    }
+
+    console.log('✅ [SCHEDULER] Running - checking every 10 seconds');
   };
 
   const performAutomaticDownload = async () => {
     try {
+      console.log('📥 [DOWNLOAD] Starting automatic download...');
+
       if (!firebase?.getTodayMeals) {
         console.error('❌ Firebase not configured for automatic download');
         return;
       }
 
       const allMeals = await firebase.getTodayMeals();
+      console.log(`📊 [DOWNLOAD] Found ${allMeals.length} meals`);
 
       if (allMeals.length === 0) {
         console.log('⚠️ No meal data to download');
@@ -568,10 +630,10 @@ export default function MealManagement() {
       const fileName = `Meal_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
       XLSX.writeFile(wb, fileName);
 
-      console.log(`✅ Automatic Excel download completed: ${fileName}`);
-      console.log(`📊 Morning: ${morningMeals.length} | Evening: ${eveningMeals.length}`);
+      console.log(`✅ [DOWNLOAD] Success: ${fileName}`);
+      console.log(`📊 [DOWNLOAD] Morning: ${morningMeals.length} | Evening: ${eveningMeals.length}`);
     } catch (error: any) {
-      console.error(`❌ Automatic download error: ${error.message}`);
+      console.error(`❌ [DOWNLOAD] Error: ${error.message}`);
     }
   };
   //===============================================================
@@ -1161,7 +1223,7 @@ export default function MealManagement() {
                 >
                   Close
                 </button>
-                <button
+                {/* <button
                   onClick={() => {
                     setShowScheduleSettings(false);
                     scheduleAutomaticDownload();
@@ -1178,9 +1240,45 @@ export default function MealManagement() {
                   }}
                 >
                   Save & Apply
+                </button> */}
+
+                <button
+                  onClick={() => {
+                    // Save to localStorage
+                    if (typeof localStorage !== 'undefined') {
+                      localStorage.setItem('excelDownloadTime', scheduledTime);
+                      localStorage.setItem('excelAutoDownloadEnabled', String(autoDownloadEnabled));
+                    }
+
+                    console.log('💾 [SETTINGS] Saved:', { scheduledTime, autoDownloadEnabled });
+
+                    // ✅ CLEAR OLD INTERVAL
+                    if (typeof window !== 'undefined' && (window as any).excelDownloadIntervalId) {
+                      clearInterval((window as any).excelDownloadIntervalId);
+                      console.log('🛑 [SCHEDULER] Stopped old scheduler');
+                    }
+
+                    setShowScheduleSettings(false);
+
+                    // ✅ RESTART SCHEDULER WITH NEW SETTINGS
+                    console.log('🔄 [SCHEDULER] Restarting with new settings...');
+                    scheduleAutomaticDownload();
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    background: 'linear-gradient(135deg, #27AE60 0%, #229954 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Save & Apply
                 </button>
               </div>
-            </div>
+            </div>s
           </div>
         ) : null}
 
