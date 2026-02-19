@@ -735,9 +735,9 @@ const downloadProfessionalPDF = async () => {
     doc.rect(20, yPosition, boxWidth, boxHeight, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('', 'bold');
     doc.text('🌅 MORNING', 20 + boxWidth / 2, yPosition + 7, { align: 'center' });
-    doc.setFont(undefined, 'normal');
+    doc.setFont('', 'normal');
     doc.setFontSize(14);
     doc.text(morningMeals.length.toString(), 20 + boxWidth / 2, yPosition + 13, { align: 'center' });
 
@@ -746,9 +746,9 @@ const downloadProfessionalPDF = async () => {
     doc.rect(20 + boxWidth + spacing, yPosition, boxWidth, boxHeight, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('', 'bold');
     doc.text('🌆 EVENING', 20 + boxWidth + spacing + boxWidth / 2, yPosition + 7, { align: 'center' });
-    doc.setFont(undefined, 'normal');
+    doc.setFont('', 'normal');
     doc.setFontSize(14);
     doc.text(eveningMeals.length.toString(), 20 + boxWidth + spacing + boxWidth / 2, yPosition + 13, { align: 'center' });
 
@@ -757,9 +757,9 @@ const downloadProfessionalPDF = async () => {
     doc.rect(20 + (boxWidth + spacing) * 2, yPosition, boxWidth, boxHeight, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('', 'bold');
     doc.text('📊 TOTAL', 20 + (boxWidth + spacing) * 2 + boxWidth / 2, yPosition + 7, { align: 'center' });
-    doc.setFont(undefined, 'normal');
+    doc.setFont('', 'normal');
     doc.setFontSize(14);
     doc.text(totalEmployees.toString(), 20 + (boxWidth + spacing) * 2 + boxWidth / 2, yPosition + 13, { align: 'center' });
 
@@ -791,7 +791,7 @@ const downloadProfessionalPDF = async () => {
       // Header row
       doc.setFillColor(...headerColor);
       doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
+      doc.setFont('', 'bold');
       doc.setFontSize(9);
 
       let xPos = tableStartX;
@@ -805,7 +805,7 @@ const downloadProfessionalPDF = async () => {
 
       // Data rows
       doc.setTextColor(...textDark);
-      doc.setFont(undefined, 'normal');
+      doc.setFont('', 'normal');
       doc.setFontSize(8);
 
       data.forEach((row, rowIndex) => {
@@ -895,7 +895,7 @@ const downloadProfessionalPDF = async () => {
     // Header
     doc.setFillColor(...accentColor);
     doc.setTextColor(255, 255, 255);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('', 'bold');
     doc.setFontSize(8);
 
     let xPos = tableStartX;
@@ -909,7 +909,7 @@ const downloadProfessionalPDF = async () => {
 
     // Data rows
     doc.setTextColor(...textDark);
-    doc.setFont(undefined, 'normal');
+    doc.setFont('', 'normal');
     doc.setFontSize(7);
 
     combinedTableData.forEach((row, rowIndex) => {
@@ -967,12 +967,12 @@ const downloadProfessionalPDF = async () => {
     // Company info
     doc.setFontSize(11);
     doc.setTextColor(...textDark);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('', 'bold');
     doc.text('Samosa Man', 20, footerY);
     footerY += 8;
 
     doc.setFontSize(9);
-    doc.setFont(undefined, 'normal');
+    doc.setFont('', 'normal');
     doc.setTextColor(127, 140, 141);
     doc.text('Employee Meal Management System', 20, footerY);
     footerY += 5;
