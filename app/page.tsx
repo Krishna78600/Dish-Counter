@@ -3,6 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+
 // Mock types for Firebase (if actual Firebase import fails)
 interface MealRecord {
   employeeId: string;
@@ -638,6 +640,369 @@ export default function MealManagement() {
   };
   //===============================================================
 
+  // =================== PDF ========================
+
+const downloadProfessionalPDF = async () => {
+  try {
+    setResponse('⏳ Generating Professional PDF Report...');
+
+    if (!firebase?.getTodayMeals) {
+      setResponse('❌ Firebase not configured');
+      return;
+    }
+
+    const allMeals = await firebase.getTodayMeals();
+
+    if (allMeals.length === 0) {
+      setResponse('⚠️ No meal data available');
+      return;
+    }
+
+    const morningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'MORNING');
+    const eveningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'EVENING');
+
+    // Calculate statistics
+    const totalEmployees = morningMeals.length + eveningMeals.length;
+    const morningPercentage = totalEmployees > 0 ? ((morningMeals.length / totalEmployees) * 100).toFixed(1) : 0;
+    const eveningPercentage = totalEmployees > 0 ? ((eveningMeals.length / totalEmployees) * 100).toFixed(1) : 0;
+
+    const counters = new Set<number>();
+    allMeals.forEach((meal: MealRecord) => counters.add(meal.counterId));
+
+    const currentDate = new Date();
+    const reportDate = currentDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const reportTime = currentDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+
+    // ========== CREATE PDF ==========
+    const doc = new jsPDF('p', 'mm', 'a4');
+    
+    // Set colors
+    const primaryColor = [255, 159, 67] as [number, number, number];
+    const secondaryColor = [255, 107, 53] as [number, number, number];
+    const accentColor = [69, 90, 100] as [number, number, number];
+    const textDark = [44, 62, 80] as [number, number, number];
+
+    let yPosition = 15;
+
+    // ========== HEADER ==========
+    doc.setFontSize(24);
+    doc.setTextColor(...textDark);
+    doc.text('MEAL MANAGEMENT REPORT', 20, yPosition);
+    yPosition += 8;
+
+    doc.setFontSize(11);
+    doc.setTextColor(127, 140, 141);
+    doc.text('Employee Meal Distribution Analysis', 20, yPosition);
+    yPosition += 12;
+
+    doc.setFontSize(9);
+    doc.setTextColor(...textDark);
+    doc.text(`Report Date: ${reportDate}`, 20, yPosition);
+    doc.text(`Generated: ${reportTime}`, 120, yPosition);
+    yPosition += 7;
+    doc.text(`Report ID: SR-${currentDate.getTime()}`, 20, yPosition);
+    doc.text(`Organization: Samosa Man`, 120, yPosition);
+    yPosition += 12;
+
+    // Divider line
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(1);
+    doc.line(20, yPosition, 190, yPosition);
+    yPosition += 8;
+
+    // ========== SUMMARY STATISTICS ==========
+    doc.setFontSize(14);
+    doc.setTextColor(...textDark);
+    doc.text('Summary Statistics', 20, yPosition);
+    yPosition += 10;
+
+    const boxWidth = 50;
+    const boxHeight = 18;
+    const spacing = 5;
+
+    // Morning box
+    doc.setFillColor(...primaryColor);
+    doc.rect(20, yPosition, boxWidth, boxHeight, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('🌅 MORNING', 20 + boxWidth / 2, yPosition + 7, { align: 'center' });
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(14);
+    doc.text(morningMeals.length.toString(), 20 + boxWidth / 2, yPosition + 13, { align: 'center' });
+
+    // Evening box
+    doc.setFillColor(...secondaryColor);
+    doc.rect(20 + boxWidth + spacing, yPosition, boxWidth, boxHeight, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('🌆 EVENING', 20 + boxWidth + spacing + boxWidth / 2, yPosition + 7, { align: 'center' });
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(14);
+    doc.text(eveningMeals.length.toString(), 20 + boxWidth + spacing + boxWidth / 2, yPosition + 13, { align: 'center' });
+
+    // Total box
+    doc.setFillColor(...accentColor);
+    doc.rect(20 + (boxWidth + spacing) * 2, yPosition, boxWidth, boxHeight, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('📊 TOTAL', 20 + (boxWidth + spacing) * 2 + boxWidth / 2, yPosition + 7, { align: 'center' });
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(14);
+    doc.text(totalEmployees.toString(), 20 + (boxWidth + spacing) * 2 + boxWidth / 2, yPosition + 13, { align: 'center' });
+
+    yPosition += boxHeight + 15;
+
+    // Key metrics
+    doc.setFontSize(10);
+    doc.setTextColor(...textDark);
+    doc.text(`Morning: ${morningPercentage}% | Evening: ${eveningPercentage}% | Counters: ${counters.size}`, 20, yPosition);
+    yPosition += 12;
+
+    // ========== FUNCTION TO DRAW TABLE ==========
+    const drawTable = (
+      title: string,
+      data: string[][],
+      yPos: number,
+      headerColor: [number, number, number]
+    ): number => {
+      const columnWidths = [40, 30, 35, 40];
+      const rowHeight = 8;
+      const tableStartX = 20;
+
+      // Title
+      doc.setFontSize(12);
+      doc.setTextColor(...textDark);
+      doc.text(title, tableStartX, yPos);
+      yPos += 8;
+
+      // Header row
+      doc.setFillColor(...headerColor);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+
+      let xPos = tableStartX;
+      const headers = ['Employee ID', 'Counter', 'Time', 'Date'];
+      headers.forEach((header, index) => {
+        doc.text(header, xPos + 2, yPos + 5);
+        xPos += columnWidths[index];
+      });
+
+      yPos += rowHeight;
+
+      // Data rows
+      doc.setTextColor(...textDark);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(8);
+
+      data.forEach((row, rowIndex) => {
+        // Alternate row colors
+        if (rowIndex % 2 === 1) {
+          doc.setFillColor(248, 249, 250);
+          doc.rect(tableStartX, yPos, 145, rowHeight, 'F');
+        }
+
+        xPos = tableStartX;
+        row.forEach((cell, cellIndex) => {
+          doc.text(cell, xPos + 2, yPos + 5);
+          xPos += columnWidths[cellIndex];
+        });
+
+        yPos += rowHeight;
+      });
+
+      // Table border
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.rect(tableStartX, yPos - (data.length + 1) * rowHeight, 145, (data.length + 1) * rowHeight);
+
+      return yPos + 5;
+    };
+
+    // ========== MORNING TABLE ==========
+    const morningTableData = morningMeals.map((meal: MealRecord) => [
+      meal.employeeId,
+      `Counter ${meal.counterId}`,
+      new Date(meal.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      new Date(meal.timestamp).toLocaleDateString('en-US'),
+    ]);
+
+    yPosition = drawTable('🌅 Morning Meal Distribution', morningTableData, yPosition, primaryColor);
+    yPosition += 5;
+
+    // Check if we need a new page
+    if (yPosition > 240) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    // ========== EVENING TABLE ==========
+    const eveningTableData = eveningMeals.map((meal: MealRecord) => [
+      meal.employeeId,
+      `Counter ${meal.counterId}`,
+      new Date(meal.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      new Date(meal.timestamp).toLocaleDateString('en-US'),
+    ]);
+
+    if (eveningTableData.length > 0) {
+      yPosition = drawTable('🌆 Evening Meal Distribution', eveningTableData, yPosition, secondaryColor);
+      yPosition += 5;
+    } else {
+      doc.setFontSize(9);
+      doc.setTextColor(127, 140, 141);
+      doc.text('🌆 Evening Meal Distribution - No records', 20, yPosition);
+      yPosition += 10;
+    }
+
+    // Check if we need a new page
+    if (yPosition > 220) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    // ========== COMBINED TABLE ==========
+    const combinedTableData = allMeals.map((meal: MealRecord) => [
+      meal.mealType === 'MORNING' ? 'MORNING' : 'EVENING',
+      meal.employeeId,
+      `Counter ${meal.counterId}`,
+      new Date(meal.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      new Date(meal.timestamp).toLocaleDateString('en-US'),
+    ]);
+
+    // Custom table for combined (5 columns)
+    doc.setFontSize(12);
+    doc.setTextColor(...textDark);
+    doc.text('📋 Complete Daily Report', 20, yPosition);
+    yPosition += 8;
+
+    const columnWidths = [30, 35, 30, 35, 40];
+    const rowHeight = 7;
+    const tableStartX = 20;
+
+    // Header
+    doc.setFillColor(...accentColor);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(8);
+
+    let xPos = tableStartX;
+    const combinedHeaders = ['Shift', 'Employee', 'Counter', 'Time', 'Date'];
+    combinedHeaders.forEach((header, index) => {
+      doc.text(header, xPos + 1, yPosition + 4);
+      xPos += columnWidths[index];
+    });
+
+    yPosition += rowHeight;
+
+    // Data rows
+    doc.setTextColor(...textDark);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7);
+
+    combinedTableData.forEach((row, rowIndex) => {
+      if (rowIndex % 2 === 1) {
+        doc.setFillColor(248, 249, 250);
+        doc.rect(tableStartX, yPosition, 170, rowHeight, 'F');
+      }
+
+      xPos = tableStartX;
+      row.forEach((cell, cellIndex) => {
+        doc.text(cell, xPos + 1, yPosition + 4);
+        xPos += columnWidths[cellIndex];
+      });
+
+      yPosition += rowHeight;
+    });
+
+    // Border
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.rect(tableStartX, yPosition - (combinedTableData.length + 1) * rowHeight, 170, (combinedTableData.length + 1) * rowHeight);
+
+    // ========== FOOTER PAGE ==========
+    doc.addPage();
+
+    let footerY = 40;
+
+    doc.setFontSize(16);
+    doc.setTextColor(...textDark);
+    doc.text('Report Summary', 20, footerY);
+    footerY += 12;
+
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(...primaryColor);
+    doc.line(20, footerY, 190, footerY);
+    footerY += 10;
+
+    // Summary content
+    doc.setFontSize(10);
+    doc.setTextColor(...textDark);
+    doc.text('This is an automatically generated meal distribution report', 20, footerY);
+    footerY += 6;
+    doc.text('from the Samosa Man Management System.', 20, footerY);
+    footerY += 10;
+
+    doc.setFontSize(9);
+    doc.setTextColor(127, 140, 141);
+    doc.text(`Generated: ${reportDate} at ${reportTime}`, 20, footerY);
+    footerY += 8;
+
+    const statsLine = `Total: ${totalEmployees} | Morning: ${morningMeals.length} (${morningPercentage}%) | Evening: ${eveningMeals.length} (${eveningPercentage}%) | Counters: ${counters.size}`;
+    doc.text(statsLine, 20, footerY);
+    footerY += 12;
+
+    // Company info
+    doc.setFontSize(11);
+    doc.setTextColor(...textDark);
+    doc.setFont(undefined, 'bold');
+    doc.text('Samosa Man', 20, footerY);
+    footerY += 8;
+
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(127, 140, 141);
+    doc.text('Employee Meal Management System', 20, footerY);
+    footerY += 5;
+    doc.text('www.ssamosaman.com', 20, footerY);
+    footerY += 10;
+
+    // Confidentiality notice
+    doc.setFontSize(8);
+    doc.setTextColor(189, 195, 199);
+    doc.text(
+      '© 2026 Samosa Man. Confidential - For authorized personnel only.',
+      20,
+      footerY,
+    );
+
+    // ========== SAVE PDF ==========
+    const fileName = `Meal_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`;
+    doc.save(fileName);
+
+    setResponse(`✅ Professional PDF Report downloaded!\nFile: ${fileName}`);
+    console.log('✅ PDF generated:', fileName);
+
+  } catch (error: any) {
+    console.error('❌ PDF Error:', error);
+    setResponse(`❌ Error: ${error.message || 'Failed to generate PDF'}`);
+  }
+};
+
+
+
 
   const handleManualSync = async () => {
     await loadTodayMeals();
@@ -998,6 +1363,33 @@ export default function MealManagement() {
                 }}
               >
                 📥 Download Excel Report
+              </button>
+
+              <button
+                onClick={downloadProfessionalPDF}
+                style={{
+                  width: '100%',
+                  padding: '0.875rem 1.5rem',
+                  background: 'linear-gradient(135deg, #E74C3C 0%, #C0392B 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '1rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  letterSpacing: '0.5px',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(231, 76, 60, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                📄 Download Professional PDF Report
               </button>
 
 
