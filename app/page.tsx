@@ -796,7 +796,7 @@ const downloadProfessionalPDF = async () => {
 
       let xPos = tableStartX;
       const headers = ['Employee ID', 'Counter', 'Time', 'Date'];
-      headers.forEach((header, index) => {
+      headers.forEach((header: string, index: number) => {
         doc.text(header, xPos + 2, yPos + 5);
         xPos += columnWidths[index];
       });
@@ -816,7 +816,7 @@ const downloadProfessionalPDF = async () => {
         }
 
         xPos = tableStartX;
-        row.forEach((cell, cellIndex) => {
+        row.forEach((cell : string, cellIndex : number) => {
           doc.text(cell, xPos + 2, yPos + 5);
           xPos += columnWidths[cellIndex];
         });
@@ -900,7 +900,7 @@ const downloadProfessionalPDF = async () => {
 
     let xPos = tableStartX;
     const combinedHeaders = ['Shift', 'Employee', 'Counter', 'Time', 'Date'];
-    combinedHeaders.forEach((header, index) => {
+    combinedHeaders.forEach((header : string , index : number) => {
       doc.text(header, xPos + 1, yPosition + 4);
       xPos += columnWidths[index];
     });
@@ -912,14 +912,14 @@ const downloadProfessionalPDF = async () => {
     doc.setFont('', 'normal');
     doc.setFontSize(7);
 
-    combinedTableData.forEach((row, rowIndex) => {
+    combinedTableData.forEach((row: string[], rowIndex: number) => {
       if (rowIndex % 2 === 1) {
         doc.setFillColor(248, 249, 250);
         doc.rect(tableStartX, yPosition, 170, rowHeight, 'F');
       }
 
       xPos = tableStartX;
-      row.forEach((cell, cellIndex) => {
+      row.forEach((cell: string, cellIndex: number) => {
         doc.text(cell, xPos + 1, yPosition + 4);
         xPos += columnWidths[cellIndex];
       });
