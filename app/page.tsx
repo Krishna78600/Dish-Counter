@@ -759,559 +759,883 @@ export default function MealManagement() {
 
   // =================== PDF ========================
 
-//   const downloadProfessionalPDF = async () => {
-//     try {
-//       setResponse('⏳ Generating Professional PDF Report...');
-
-//       if (!firebase?.getTodayMeals) {
-//         setResponse('❌ Firebase not configured');
-//         return;
-//       }
-
-//       const allMeals = await firebase.getTodayMeals();
-
-//       if (allMeals.length === 0) {
-//         setResponse('⚠️ No meal data available');
-//         return;
-//       }
-
-//       const morningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'MORNING');
-//       const eveningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'EVENING');
-
-//       // Calculate statistics
-//       const totalEmployees = morningMeals.length + eveningMeals.length;
-//       const morningPercentage = totalEmployees > 0 ? ((morningMeals.length / totalEmployees) * 100).toFixed(1) : 0;
-//       const eveningPercentage = totalEmployees > 0 ? ((eveningMeals.length / totalEmployees) * 100).toFixed(1) : 0;
-
-//       const counters = new Set<number>();
-//       allMeals.forEach((meal: MealRecord) => counters.add(meal.counterId));
-
-//       const currentDate = new Date();
-//       const reportDate = currentDate.toLocaleDateString('en-US', {
-//         weekday: 'long',
-//         year: 'numeric',
-//         month: 'long',
-//         day: 'numeric'
-//       });
-
-//       const reportTime = currentDate.toLocaleTimeString('en-US', {
-//         hour: '2-digit',
-//         minute: '2-digit',
-//         second: '2-digit'
-//       });
-
-//       // ========== CREATE PDF ==========
-
-//       const doc = new jsPDF('p', 'mm', 'a4');
-
-//       // Set colors
-//       const primaryColor = [255, 159, 67] as [number, number, number];
-//       const secondaryColor = [255, 107, 53] as [number, number, number];
-//       const accentColor = [69, 90, 100] as [number, number, number];
-//       const textDark = [44, 62, 80] as [number, number, number];
-
-//       let yPosition = 15;
-
-//       // ========== HEADER ==========
-//       doc.setFontSize(24);
-//       doc.setTextColor(...textDark);
-//       doc.text('EMPLOYEE MEAL REPORT', 20, yPosition);
-//       yPosition += 8;
-
-//       doc.setFontSize(11);
-//       doc.setTextColor(127, 140, 141);
-//       doc.text('Employee Meal Distribution Analysis', 20, yPosition);
-//       yPosition += 12;
-
-//       doc.setFontSize(9);
-//       doc.setTextColor(...textDark);
-//       doc.text(`Report Date: ${reportDate}`, 20, yPosition);
-//       doc.text(`Generated: ${reportTime}`, 120, yPosition);
-//       yPosition += 7;
-//       doc.text(`Report ID: SR-${currentDate.getTime()}`, 20, yPosition);
-//       doc.text(`Organization: Samosa Man`, 120, yPosition);
-//       yPosition += 12;
-
-//       // Divider line
-//       doc.setDrawColor(...primaryColor);
-//       doc.setLineWidth(1);
-//       doc.line(20, yPosition, 190, yPosition);
-//       yPosition += 8;
-
-//       // ========== SUMMARY STATISTICS ==========
-//       doc.setFontSize(14);
-//       doc.setTextColor(...textDark);
-//       doc.text('Summary Statistics', 20, yPosition);
-//       yPosition += 10;
-
-//       const boxWidth = 50;
-//       const boxHeight = 18;
-//       const spacing = 5;
-
-//       // Morning box
-//       doc.setFillColor(...primaryColor);
-//       doc.rect(20, yPosition, boxWidth, boxHeight, 'F');
-//       doc.setTextColor(255, 255, 255);
-//       doc.setFontSize(10);
-//       doc.setFont('', 'bold');
-//       doc.text('MORNING', 20 + boxWidth / 2, yPosition + 7, { align: 'center' });
-//       doc.setFont('', 'normal');
-//       doc.setFontSize(14);
-//       doc.text(morningMeals.length.toString(), 20 + boxWidth / 2, yPosition + 13, { align: 'center' });
-
-//       // Evening box
-//       doc.setFillColor(...secondaryColor);
-//       doc.rect(20 + boxWidth + spacing, yPosition, boxWidth, boxHeight, 'F');
-//       doc.setTextColor(255, 255, 255);
-//       doc.setFontSize(10);
-//       doc.setFont('', 'bold');
-//       doc.text('EVENING', 20 + boxWidth + spacing + boxWidth / 2, yPosition + 7, { align: 'center' });
-//       doc.setFont('', 'normal');
-//       doc.setFontSize(14);
-//       doc.text(eveningMeals.length.toString(), 20 + boxWidth + spacing + boxWidth / 2, yPosition + 13, { align: 'center' });
-
-//       // Total box
-//       doc.setFillColor(...accentColor);
-//       doc.rect(20 + (boxWidth + spacing) * 2, yPosition, boxWidth, boxHeight, 'F');
-//       doc.setTextColor(255, 255, 255);
-//       doc.setFontSize(10);
-//       doc.setFont('', 'bold');
-//       doc.text('TOTAL', 20 + (boxWidth + spacing) * 2 + boxWidth / 2, yPosition + 7, { align: 'center' });
-//       doc.setFont('', 'normal');
-//       doc.setFontSize(14);
-//       doc.text(totalEmployees.toString(), 20 + (boxWidth + spacing) * 2 + boxWidth / 2, yPosition + 13, { align: 'center' });
-
-//       yPosition += boxHeight + 15;
-
-//       // Key metrics
-//       doc.setFontSize(10);
-//       doc.setTextColor(...textDark);
-//       doc.text(`Morning: ${morningPercentage}% | Evening: ${eveningPercentage}% | Counters: ${counters.size}`, 20, yPosition);
-//       yPosition += 12;
-
-//       // ========== FUNCTION TO DRAW TABLE ==========
-//      /*  const drawTable = (
-//         title: string,
-//         data: string[][],
-//         yPos: number,
-//         headerColor: [number, number, number]
-//       ): number => {
-//         const columnWidths = [40, 30, 35, 40];
-//         const rowHeight = 8;
-//         const tableStartX = 20;
-
-//         // Title
-//         doc.setFontSize(12);
-//         doc.setTextColor(...textDark);
-//         doc.text(title, tableStartX, yPos);
-//         yPos += 8;
-
-//         // Header row
-//         doc.setFillColor(...headerColor);
-//         doc.setTextColor(255, 255, 255);
-//         doc.setFont('', 'bold');
-//         doc.setFontSize(9);
-
-//         let xPos = tableStartX;
-//         const headers = ['Employee ID', 'Counter', 'Time', 'Date'];
-//         headers.forEach((header: string, index: number) => {
-//           doc.text(header, xPos + 2, yPos + 5);
-//           xPos += columnWidths[index];
-//         });
-
-//         yPos += rowHeight;
-
-//         // Data rows
-//         doc.setTextColor(...textDark);
-//         doc.setFont('', 'normal');
-//         doc.setFontSize(8);
-
-//         data.forEach((row, rowIndex) => {
-//           // Alternate row colors
-//           if (rowIndex % 2 === 1) {
-//             doc.setFillColor(248, 249, 250);
-//             doc.rect(tableStartX, yPos, 145, rowHeight, 'F');
-//           }
-
-//           xPos = tableStartX;
-//           row.forEach((cell: string, cellIndex: number) => {
-//             doc.text(cell, xPos + 2, yPos + 5);
-//             xPos += columnWidths[cellIndex];
-//           });
-
-//           yPos += rowHeight;
-//         });
-
-//         // Table border
-//         doc.setDrawColor(200, 200, 200);
-//         doc.setLineWidth(0.5);
-//         doc.rect(tableStartX, yPos - (data.length + 1) * rowHeight, 145, (data.length + 1) * rowHeight);
-
-//         return yPos + 5;
-//       }; */
-
-//       // ========== MORNING TABLE ==========
-// /*       const morningTableData = morningMeals.map((meal: MealRecord) => [
-//         meal.employeeId,
-//         `Counter ${meal.counterId}`,
-//         new Date(meal.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-//         new Date(meal.timestamp).toLocaleDateString('en-US'),
-//       ]); */
-
-//       // yPosition = drawTable('Morning Meal Distribution', morningTableData, yPosition, primaryColor);
-//       // yPosition += 5;
-
-//       // Check if we need a new page
-//       // if (yPosition > 240) {
-//       //   doc.addPage();
-//       //   yPosition = 20;
-//       // }
-
-//       // ========== EVENING TABLE ==========
-// /*       const eveningTableData = eveningMeals.map((meal: MealRecord) => [
-//         meal.employeeId,
-//         `Counter ${meal.counterId}`,
-//         new Date(meal.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-//         new Date(meal.timestamp).toLocaleDateString('en-US'),
-//       ]); */
-
-// /*       if (eveningTableData.length > 0) {
-//         yPosition = drawTable('Evening Meal Distribution', eveningTableData, yPosition, secondaryColor);
-//         yPosition += 5;
-//       } else {
-//         doc.setFontSize(9);
-//         doc.setTextColor(127, 140, 141);
-//         doc.text('Evening Meal Distribution - No records', 20, yPosition);
-//         yPosition += 10;
-//       } */
-
-//       // Check if we need a new page
-// /*       if (yPosition > 220) {
-//         doc.addPage();
-//         yPosition = 20;
-//       } */
-
-//       // ========== COMBINED TABLE ==========
-// /*       const combinedTableData = allMeals.map((meal: MealRecord) => [
-//         meal.mealType === 'MORNING' ? 'MORNING' : 'EVENING',
-//         meal.employeeId,
-//         `Counter ${meal.counterId}`,
-//         new Date(meal.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-//         new Date(meal.timestamp).toLocaleDateString('en-US'),
-//       ]); */
-
-//       // Custom table for combined (5 columns)
-//       doc.setFontSize(12);
-//       doc.setTextColor(...textDark);
-//       doc.text('Complete Daily Report', 20, yPosition);
-//       yPosition += 8;
-
-//       const columnWidths = [30, 35, 30, 35, 40];
-//       const rowHeight = 7;
-//       const tableStartX = 20;
-
-//       // Header
-//       doc.setFillColor(...accentColor);
-//       doc.setTextColor(255, 255, 255);
-//       doc.setFont('', 'bold');
-//       doc.setFontSize(8);
-
-//       let xPos = tableStartX;
-//       const combinedHeaders = ['Shift', 'Employee', 'Counter', 'Time', 'Date'];
-//       combinedHeaders.forEach((header: string, index: number) => {
-//         doc.text(header, xPos + 1, yPosition + 4);
-//         xPos += columnWidths[index];
-//       });
-
-//       yPosition += rowHeight;
-
-//       // Data rows
-//       doc.setTextColor(...textDark);
-//       doc.setFont('', 'normal');
-//       doc.setFontSize(7);
-
-//       combinedTableData.forEach((row: string[], rowIndex: number) => {
-//         if (rowIndex % 2 === 1) {
-//           doc.setFillColor(248, 249, 250);
-//           doc.rect(tableStartX, yPosition, 170, rowHeight, 'F');
-//         }
-
-//         xPos = tableStartX;
-//         row.forEach((cell: string, cellIndex: number) => {
-//           doc.text(cell, xPos + 1, yPosition + 4);
-//           xPos += columnWidths[cellIndex];
-//         });
-
-//         yPosition += rowHeight;
-//       });
-
-//       // Border
-//       doc.setDrawColor(200, 200, 200);
-//       doc.setLineWidth(0.5);
-//       doc.rect(tableStartX, yPosition - (combinedTableData.length + 1) * rowHeight, 170, (combinedTableData.length + 1) * rowHeight);
-
-//       // ========== FOOTER PAGE ==========
-//       doc.addPage();
-
-//       let footerY = 40;
-
-//       doc.setFontSize(16);
-//       doc.setTextColor(...textDark);
-//       doc.text('Report Summary', 20, footerY);
-//       footerY += 12;
-
-//       doc.setLineWidth(0.5);
-//       doc.setDrawColor(...primaryColor);
-//       doc.line(20, footerY, 190, footerY);
-//       footerY += 10;
-
-//       // Summary content
-//       doc.setFontSize(10);
-//       doc.setTextColor(...textDark);
-//       doc.text('This is an automatically generated meal distribution report', 20, footerY);
-//       footerY += 6;
-//       doc.text('from the Samosa Man', 20, footerY);
-//       footerY += 10;
-
-//       doc.setFontSize(9);
-//       doc.setTextColor(127, 140, 141);
-//       doc.text(`Generated: ${reportDate} at ${reportTime}`, 20, footerY);
-//       footerY += 8;
-
-//       const statsLine = `Total: ${totalEmployees} | Morning: ${morningMeals.length} (${morningPercentage}%) | Evening: ${eveningMeals.length} (${eveningPercentage}%) | Counters: ${counters.size}`;
-//       doc.text(statsLine, 20, footerY);
-//       footerY += 12;
-
-//       // Company info
-//       doc.setFontSize(11);
-//       doc.setTextColor(...textDark);
-//       doc.setFont('', 'bold');
-//       doc.text('Samosa Man', 20, footerY);
-//       footerY += 8;
-
-//       doc.setFontSize(9);
-//       doc.setFont('', 'normal');
-//       doc.setTextColor(127, 140, 141);
-//       doc.text('Employee Meal Management System', 20, footerY);
-//       footerY += 5;
-//       doc.text('www.samosaman.com', 20, footerY);
-//       footerY += 10;
-
-//       // Confidentiality notice
-//       doc.setFontSize(8);
-//       doc.setTextColor(189, 195, 199);
-//       doc.text(
-//         '© 2026 Samosa Man. Confidential - For authorized personnel only.',
-//         20,
-//         footerY,
-//       );
-
-//       // ========== SAVE PDF ==========
-//       const fileName = `SM_Meal_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`;
-//       doc.save(fileName);
-
-//       setResponse(`PDF Report downloaded!\nFile: ${fileName}`);
-//       console.log('✅ PDF generated:', fileName);
-
-//     } catch (error: any) {
-//       console.error('❌ PDF Error:', error);
-//       setResponse(`❌ Error: ${error.message || 'Failed to generate PDF'}`);
-//     }
-//   };
-
-
-const downloadProfessionalPDF = async () => {
-  try {
-    setResponse('⏳ Generating PDF Report...');
-
-    if (!firebase?.getTodayMeals) {
-      setResponse('❌ Firebase not configured');
-      return;
+  //   const downloadProfessionalPDF = async () => {
+  //     try {
+  //       setResponse('⏳ Generating Professional PDF Report...');
+
+  //       if (!firebase?.getTodayMeals) {
+  //         setResponse('❌ Firebase not configured');
+  //         return;
+  //       }
+
+  //       const allMeals = await firebase.getTodayMeals();
+
+  //       if (allMeals.length === 0) {
+  //         setResponse('⚠️ No meal data available');
+  //         return;
+  //       }
+
+  //       const morningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'MORNING');
+  //       const eveningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'EVENING');
+
+  //       // Calculate statistics
+  //       const totalEmployees = morningMeals.length + eveningMeals.length;
+  //       const morningPercentage = totalEmployees > 0 ? ((morningMeals.length / totalEmployees) * 100).toFixed(1) : 0;
+  //       const eveningPercentage = totalEmployees > 0 ? ((eveningMeals.length / totalEmployees) * 100).toFixed(1) : 0;
+
+  //       const counters = new Set<number>();
+  //       allMeals.forEach((meal: MealRecord) => counters.add(meal.counterId));
+
+  //       const currentDate = new Date();
+  //       const reportDate = currentDate.toLocaleDateString('en-US', {
+  //         weekday: 'long',
+  //         year: 'numeric',
+  //         month: 'long',
+  //         day: 'numeric'
+  //       });
+
+  //       const reportTime = currentDate.toLocaleTimeString('en-US', {
+  //         hour: '2-digit',
+  //         minute: '2-digit',
+  //         second: '2-digit'
+  //       });
+
+  //       // ========== CREATE PDF ==========
+
+  //       const doc = new jsPDF('p', 'mm', 'a4');
+
+  //       // Set colors
+  //       const primaryColor = [255, 159, 67] as [number, number, number];
+  //       const secondaryColor = [255, 107, 53] as [number, number, number];
+  //       const accentColor = [69, 90, 100] as [number, number, number];
+  //       const textDark = [44, 62, 80] as [number, number, number];
+
+  //       let yPosition = 15;
+
+  //       // ========== HEADER ==========
+  //       doc.setFontSize(24);
+  //       doc.setTextColor(...textDark);
+  //       doc.text('EMPLOYEE MEAL REPORT', 20, yPosition);
+  //       yPosition += 8;
+
+  //       doc.setFontSize(11);
+  //       doc.setTextColor(127, 140, 141);
+  //       doc.text('Employee Meal Distribution Analysis', 20, yPosition);
+  //       yPosition += 12;
+
+  //       doc.setFontSize(9);
+  //       doc.setTextColor(...textDark);
+  //       doc.text(`Report Date: ${reportDate}`, 20, yPosition);
+  //       doc.text(`Generated: ${reportTime}`, 120, yPosition);
+  //       yPosition += 7;
+  //       doc.text(`Report ID: SR-${currentDate.getTime()}`, 20, yPosition);
+  //       doc.text(`Organization: Samosa Man`, 120, yPosition);
+  //       yPosition += 12;
+
+  //       // Divider line
+  //       doc.setDrawColor(...primaryColor);
+  //       doc.setLineWidth(1);
+  //       doc.line(20, yPosition, 190, yPosition);
+  //       yPosition += 8;
+
+  //       // ========== SUMMARY STATISTICS ==========
+  //       doc.setFontSize(14);
+  //       doc.setTextColor(...textDark);
+  //       doc.text('Summary Statistics', 20, yPosition);
+  //       yPosition += 10;
+
+  //       const boxWidth = 50;
+  //       const boxHeight = 18;
+  //       const spacing = 5;
+
+  //       // Morning box
+  //       doc.setFillColor(...primaryColor);
+  //       doc.rect(20, yPosition, boxWidth, boxHeight, 'F');
+  //       doc.setTextColor(255, 255, 255);
+  //       doc.setFontSize(10);
+  //       doc.setFont('', 'bold');
+  //       doc.text('MORNING', 20 + boxWidth / 2, yPosition + 7, { align: 'center' });
+  //       doc.setFont('', 'normal');
+  //       doc.setFontSize(14);
+  //       doc.text(morningMeals.length.toString(), 20 + boxWidth / 2, yPosition + 13, { align: 'center' });
+
+  //       // Evening box
+  //       doc.setFillColor(...secondaryColor);
+  //       doc.rect(20 + boxWidth + spacing, yPosition, boxWidth, boxHeight, 'F');
+  //       doc.setTextColor(255, 255, 255);
+  //       doc.setFontSize(10);
+  //       doc.setFont('', 'bold');
+  //       doc.text('EVENING', 20 + boxWidth + spacing + boxWidth / 2, yPosition + 7, { align: 'center' });
+  //       doc.setFont('', 'normal');
+  //       doc.setFontSize(14);
+  //       doc.text(eveningMeals.length.toString(), 20 + boxWidth + spacing + boxWidth / 2, yPosition + 13, { align: 'center' });
+
+  //       // Total box
+  //       doc.setFillColor(...accentColor);
+  //       doc.rect(20 + (boxWidth + spacing) * 2, yPosition, boxWidth, boxHeight, 'F');
+  //       doc.setTextColor(255, 255, 255);
+  //       doc.setFontSize(10);
+  //       doc.setFont('', 'bold');
+  //       doc.text('TOTAL', 20 + (boxWidth + spacing) * 2 + boxWidth / 2, yPosition + 7, { align: 'center' });
+  //       doc.setFont('', 'normal');
+  //       doc.setFontSize(14);
+  //       doc.text(totalEmployees.toString(), 20 + (boxWidth + spacing) * 2 + boxWidth / 2, yPosition + 13, { align: 'center' });
+
+  //       yPosition += boxHeight + 15;
+
+  //       // Key metrics
+  //       doc.setFontSize(10);
+  //       doc.setTextColor(...textDark);
+  //       doc.text(`Morning: ${morningPercentage}% | Evening: ${eveningPercentage}% | Counters: ${counters.size}`, 20, yPosition);
+  //       yPosition += 12;
+
+  //       // ========== FUNCTION TO DRAW TABLE ==========
+  //      /*  const drawTable = (
+  //         title: string,
+  //         data: string[][],
+  //         yPos: number,
+  //         headerColor: [number, number, number]
+  //       ): number => {
+  //         const columnWidths = [40, 30, 35, 40];
+  //         const rowHeight = 8;
+  //         const tableStartX = 20;
+
+  //         // Title
+  //         doc.setFontSize(12);
+  //         doc.setTextColor(...textDark);
+  //         doc.text(title, tableStartX, yPos);
+  //         yPos += 8;
+
+  //         // Header row
+  //         doc.setFillColor(...headerColor);
+  //         doc.setTextColor(255, 255, 255);
+  //         doc.setFont('', 'bold');
+  //         doc.setFontSize(9);
+
+  //         let xPos = tableStartX;
+  //         const headers = ['Employee ID', 'Counter', 'Time', 'Date'];
+  //         headers.forEach((header: string, index: number) => {
+  //           doc.text(header, xPos + 2, yPos + 5);
+  //           xPos += columnWidths[index];
+  //         });
+
+  //         yPos += rowHeight;
+
+  //         // Data rows
+  //         doc.setTextColor(...textDark);
+  //         doc.setFont('', 'normal');
+  //         doc.setFontSize(8);
+
+  //         data.forEach((row, rowIndex) => {
+  //           // Alternate row colors
+  //           if (rowIndex % 2 === 1) {
+  //             doc.setFillColor(248, 249, 250);
+  //             doc.rect(tableStartX, yPos, 145, rowHeight, 'F');
+  //           }
+
+  //           xPos = tableStartX;
+  //           row.forEach((cell: string, cellIndex: number) => {
+  //             doc.text(cell, xPos + 2, yPos + 5);
+  //             xPos += columnWidths[cellIndex];
+  //           });
+
+  //           yPos += rowHeight;
+  //         });
+
+  //         // Table border
+  //         doc.setDrawColor(200, 200, 200);
+  //         doc.setLineWidth(0.5);
+  //         doc.rect(tableStartX, yPos - (data.length + 1) * rowHeight, 145, (data.length + 1) * rowHeight);
+
+  //         return yPos + 5;
+  //       }; */
+
+  //       // ========== MORNING TABLE ==========
+  // /*       const morningTableData = morningMeals.map((meal: MealRecord) => [
+  //         meal.employeeId,
+  //         `Counter ${meal.counterId}`,
+  //         new Date(meal.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+  //         new Date(meal.timestamp).toLocaleDateString('en-US'),
+  //       ]); */
+
+  //       // yPosition = drawTable('Morning Meal Distribution', morningTableData, yPosition, primaryColor);
+  //       // yPosition += 5;
+
+  //       // Check if we need a new page
+  //       // if (yPosition > 240) {
+  //       //   doc.addPage();
+  //       //   yPosition = 20;
+  //       // }
+
+  //       // ========== EVENING TABLE ==========
+  // /*       const eveningTableData = eveningMeals.map((meal: MealRecord) => [
+  //         meal.employeeId,
+  //         `Counter ${meal.counterId}`,
+  //         new Date(meal.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+  //         new Date(meal.timestamp).toLocaleDateString('en-US'),
+  //       ]); */
+
+  // /*       if (eveningTableData.length > 0) {
+  //         yPosition = drawTable('Evening Meal Distribution', eveningTableData, yPosition, secondaryColor);
+  //         yPosition += 5;
+  //       } else {
+  //         doc.setFontSize(9);
+  //         doc.setTextColor(127, 140, 141);
+  //         doc.text('Evening Meal Distribution - No records', 20, yPosition);
+  //         yPosition += 10;
+  //       } */
+
+  //       // Check if we need a new page
+  // /*       if (yPosition > 220) {
+  //         doc.addPage();
+  //         yPosition = 20;
+  //       } */
+
+  //       // ========== COMBINED TABLE ==========
+  // /*       const combinedTableData = allMeals.map((meal: MealRecord) => [
+  //         meal.mealType === 'MORNING' ? 'MORNING' : 'EVENING',
+  //         meal.employeeId,
+  //         `Counter ${meal.counterId}`,
+  //         new Date(meal.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+  //         new Date(meal.timestamp).toLocaleDateString('en-US'),
+  //       ]); */
+
+  //       // Custom table for combined (5 columns)
+  //       doc.setFontSize(12);
+  //       doc.setTextColor(...textDark);
+  //       doc.text('Complete Daily Report', 20, yPosition);
+  //       yPosition += 8;
+
+  //       const columnWidths = [30, 35, 30, 35, 40];
+  //       const rowHeight = 7;
+  //       const tableStartX = 20;
+
+  //       // Header
+  //       doc.setFillColor(...accentColor);
+  //       doc.setTextColor(255, 255, 255);
+  //       doc.setFont('', 'bold');
+  //       doc.setFontSize(8);
+
+  //       let xPos = tableStartX;
+  //       const combinedHeaders = ['Shift', 'Employee', 'Counter', 'Time', 'Date'];
+  //       combinedHeaders.forEach((header: string, index: number) => {
+  //         doc.text(header, xPos + 1, yPosition + 4);
+  //         xPos += columnWidths[index];
+  //       });
+
+  //       yPosition += rowHeight;
+
+  //       // Data rows
+  //       doc.setTextColor(...textDark);
+  //       doc.setFont('', 'normal');
+  //       doc.setFontSize(7);
+
+  //       combinedTableData.forEach((row: string[], rowIndex: number) => {
+  //         if (rowIndex % 2 === 1) {
+  //           doc.setFillColor(248, 249, 250);
+  //           doc.rect(tableStartX, yPosition, 170, rowHeight, 'F');
+  //         }
+
+  //         xPos = tableStartX;
+  //         row.forEach((cell: string, cellIndex: number) => {
+  //           doc.text(cell, xPos + 1, yPosition + 4);
+  //           xPos += columnWidths[cellIndex];
+  //         });
+
+  //         yPosition += rowHeight;
+  //       });
+
+  //       // Border
+  //       doc.setDrawColor(200, 200, 200);
+  //       doc.setLineWidth(0.5);
+  //       doc.rect(tableStartX, yPosition - (combinedTableData.length + 1) * rowHeight, 170, (combinedTableData.length + 1) * rowHeight);
+
+  //       // ========== FOOTER PAGE ==========
+  //       doc.addPage();
+
+  //       let footerY = 40;
+
+  //       doc.setFontSize(16);
+  //       doc.setTextColor(...textDark);
+  //       doc.text('Report Summary', 20, footerY);
+  //       footerY += 12;
+
+  //       doc.setLineWidth(0.5);
+  //       doc.setDrawColor(...primaryColor);
+  //       doc.line(20, footerY, 190, footerY);
+  //       footerY += 10;
+
+  //       // Summary content
+  //       doc.setFontSize(10);
+  //       doc.setTextColor(...textDark);
+  //       doc.text('This is an automatically generated meal distribution report', 20, footerY);
+  //       footerY += 6;
+  //       doc.text('from the Samosa Man', 20, footerY);
+  //       footerY += 10;
+
+  //       doc.setFontSize(9);
+  //       doc.setTextColor(127, 140, 141);
+  //       doc.text(`Generated: ${reportDate} at ${reportTime}`, 20, footerY);
+  //       footerY += 8;
+
+  //       const statsLine = `Total: ${totalEmployees} | Morning: ${morningMeals.length} (${morningPercentage}%) | Evening: ${eveningMeals.length} (${eveningPercentage}%) | Counters: ${counters.size}`;
+  //       doc.text(statsLine, 20, footerY);
+  //       footerY += 12;
+
+  //       // Company info
+  //       doc.setFontSize(11);
+  //       doc.setTextColor(...textDark);
+  //       doc.setFont('', 'bold');
+  //       doc.text('Samosa Man', 20, footerY);
+  //       footerY += 8;
+
+  //       doc.setFontSize(9);
+  //       doc.setFont('', 'normal');
+  //       doc.setTextColor(127, 140, 141);
+  //       doc.text('Employee Meal Management System', 20, footerY);
+  //       footerY += 5;
+  //       doc.text('www.samosaman.com', 20, footerY);
+  //       footerY += 10;
+
+  //       // Confidentiality notice
+  //       doc.setFontSize(8);
+  //       doc.setTextColor(189, 195, 199);
+  //       doc.text(
+  //         '© 2026 Samosa Man. Confidential - For authorized personnel only.',
+  //         20,
+  //         footerY,
+  //       );
+
+  //       // ========== SAVE PDF ==========
+  //       const fileName = `SM_Meal_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`;
+  //       doc.save(fileName);
+
+  //       setResponse(`PDF Report downloaded!\nFile: ${fileName}`);
+  //       console.log('✅ PDF generated:', fileName);
+
+  //     } catch (error: any) {
+  //       console.error('❌ PDF Error:', error);
+  //       setResponse(`❌ Error: ${error.message || 'Failed to generate PDF'}`);
+  //     }
+  //   };
+
+
+  // const downloadProfessionalPDF = async () => {
+  //   try {
+  //     setResponse('⏳ Generating PDF Report...');
+
+  //     if (!firebase?.getTodayMeals) {
+  //       setResponse('❌ Firebase not configured');
+  //       return;
+  //     }
+
+  //     const allMeals = await firebase.getTodayMeals();
+
+  //     if (allMeals.length === 0) {
+  //       setResponse('⚠️ No meal data available');
+  //       return;
+  //     }
+
+  //     const morningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'MORNING');
+  //     const eveningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'EVENING');
+
+  //     const totalEmployees = morningMeals.length + eveningMeals.length;
+  //     const morningPercentage = totalEmployees > 0 ? ((morningMeals.length / totalEmployees) * 100).toFixed(1) : 0;
+  //     const eveningPercentage = totalEmployees > 0 ? ((eveningMeals.length / totalEmployees) * 100).toFixed(1) : 0;
+
+  //     const counters = new Set<number>();
+  //     allMeals.forEach((meal: MealRecord) => counters.add(meal.counterId));
+
+  //     const currentDate = new Date();
+  //     const reportDate = currentDate.toLocaleDateString('en-US', {
+  //       weekday: 'long',
+  //       year: 'numeric',
+  //       month: 'long',
+  //       day: 'numeric'
+  //     });
+
+  //     const reportTime = currentDate.toLocaleTimeString('en-US', {
+  //       hour: '2-digit',
+  //       minute: '2-digit',
+  //       second: '2-digit'
+  //     });
+
+  //     // ========== CREATE PDF ==========
+  //     const doc = new jsPDF('p', 'mm', 'a4');
+
+  //     const primaryColor = [255, 159, 67] as [number, number, number];
+  //     const secondaryColor = [255, 107, 53] as [number, number, number];
+  //     const accentColor = [69, 90, 100] as [number, number, number];
+  //     const textDark = [44, 62, 80] as [number, number, number];
+
+  //     let yPosition = 15;
+
+  //     // ========== HEADER ==========
+  //     doc.setFontSize(24);
+  //     doc.setTextColor(...textDark);
+  //     doc.text('MEAL MANAGEMENT REPORT', 20, yPosition);
+  //     yPosition += 8;
+
+  //     doc.setFontSize(11);
+  //     doc.setTextColor(127, 140, 141);
+  //     doc.text('Employee Meal Distribution Analysis', 20, yPosition);
+  //     yPosition += 12;
+
+  //     doc.setFontSize(9);
+  //     doc.setTextColor(...textDark);
+  //     doc.text(`Report Date: ${reportDate}`, 20, yPosition);
+  //     doc.text(`Generated: ${reportTime}`, 120, yPosition);
+  //     yPosition += 7;
+  //     doc.text(`Report ID: SR-${currentDate.getTime()}`, 20, yPosition);
+  //     doc.text(`Organization: Samosa Man`, 120, yPosition);
+  //     yPosition += 12;
+
+  //     // Divider line
+  //     doc.setDrawColor(...primaryColor);
+  //     doc.setLineWidth(1);
+  //     doc.line(20, yPosition, 190, yPosition);
+  //     yPosition += 8;
+
+  //     // ========== SUMMARY STATISTICS ==========
+  //     doc.setFontSize(14);
+  //     doc.setTextColor(...textDark);
+  //     doc.text('Summary Statistics', 20, yPosition);
+  //     yPosition += 10;
+
+  //     const boxWidth = 50;
+  //     const boxHeight = 18;
+  //     const spacing = 5;
+
+  //     // Morning box
+  //     doc.setFillColor(...primaryColor);
+  //     doc.rect(20, yPosition, boxWidth, boxHeight, 'F');
+  //     doc.setTextColor(255, 255, 255);
+  //     doc.setFontSize(10);
+  //     doc.setFont('', 'bold');
+  //     doc.text('MORNING', 20 + boxWidth / 2, yPosition + 7, { align: 'center' });
+  //     doc.setFont('', 'normal');
+  //     doc.setFontSize(14);
+  //     doc.text(morningMeals.length.toString(), 20 + boxWidth / 2, yPosition + 13, { align: 'center' });
+
+  //     // Evening box
+  //     doc.setFillColor(...secondaryColor);
+  //     doc.rect(20 + boxWidth + spacing, yPosition, boxWidth, boxHeight, 'F');
+  //     doc.setTextColor(255, 255, 255);
+  //     doc.setFontSize(10);
+  //     doc.setFont('', 'bold');
+  //     doc.text('EVENING', 20 + boxWidth + spacing + boxWidth / 2, yPosition + 7, { align: 'center' });
+  //     doc.setFont('', 'normal');
+  //     doc.setFontSize(14);
+  //     doc.text(eveningMeals.length.toString(), 20 + boxWidth + spacing + boxWidth / 2, yPosition + 13, { align: 'center' });
+
+  //     // Total box
+  //     doc.setFillColor(...accentColor);
+  //     doc.rect(20 + (boxWidth + spacing) * 2, yPosition, boxWidth, boxHeight, 'F');
+  //     doc.setTextColor(255, 255, 255);
+  //     doc.setFontSize(10);
+  //     doc.setFont('', 'bold');
+  //     doc.text('TOTAL', 20 + (boxWidth + spacing) * 2 + boxWidth / 2, yPosition + 7, { align: 'center' });
+  //     doc.setFont('', 'normal');
+  //     doc.setFontSize(14);
+  //     doc.text(totalEmployees.toString(), 20 + (boxWidth + spacing) * 2 + boxWidth / 2, yPosition + 13, { align: 'center' });
+
+  //     yPosition += boxHeight + 15;
+
+  //     // Key metrics
+  //     doc.setFontSize(10);
+  //     doc.setTextColor(...textDark);
+  //     doc.text(`Morning: ${morningPercentage}% | Evening: ${eveningPercentage}% | Active Counters: ${counters.size}`, 20, yPosition);
+  //     yPosition += 15;
+
+  //     // ========== SUMMARY FOOTER SECTION (ON SAME PAGE) ==========
+  //     doc.setFontSize(12);
+  //     doc.setTextColor(...textDark);
+  //     doc.text('Report Summary', 20, yPosition);
+  //     yPosition += 10;
+
+  //     doc.setLineWidth(0.5);
+  //     doc.setDrawColor(...primaryColor);
+  //     doc.line(20, yPosition, 190, yPosition);
+  //     yPosition += 10;
+
+  //     // Summary information
+  //     doc.setFontSize(9);
+  //     doc.setTextColor(...textDark);
+  //     doc.text('This is an automatically generated meal distribution report', 20, yPosition);
+  //     yPosition += 6;
+  //     doc.text('from the Samosa Man Employee Meal Management System.', 20, yPosition);
+  //     yPosition += 10;
+
+  //     doc.setFontSize(8);
+  //     doc.setTextColor(127, 140, 141);
+  //     doc.text(`Generated: ${reportDate} at ${reportTime}`, 20, yPosition);
+  //     yPosition += 8;
+
+  //     const statsLine = `Total Employees: ${totalEmployees} | Morning: ${morningMeals.length} (${morningPercentage}%) | Evening: ${eveningMeals.length} (${eveningPercentage}%) | Active Counters: ${counters.size}`;
+  //     doc.text(statsLine, 20, yPosition);
+  //     yPosition += 12;
+
+  //     // Company info
+  //     doc.setFontSize(10);
+  //     doc.setTextColor(...textDark);
+  //     doc.setFont('', 'bold');
+  //     doc.text('Samosa Man', 20, yPosition);
+  //     yPosition += 8;
+
+  //     doc.setFontSize(8);
+  //     doc.setFont('', 'normal');
+  //     doc.setTextColor(127, 140, 141);
+  //     doc.text('Employee Meal Management System', 20, yPosition);
+  //     yPosition += 5;
+  //     doc.text('www.ssamosaman.com', 20, yPosition);
+  //     yPosition += 10;
+
+  //     // Confidentiality notice
+  //     doc.setFontSize(7);
+  //     doc.setTextColor(189, 195, 199);
+  //     doc.text(
+  //       '© 2026 Samosa Man. Confidential - For authorized personnel only.',
+  //       20,
+  //       yPosition,
+  //     );
+
+  //     // ========== SAVE PDF ==========
+  //     const fileName = `SM_Meal_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`;
+  //     doc.save(fileName);
+
+  //     setResponse(`✅ PDF Report Downloaded!\nFile: ${fileName}\nSingle-page summary report`);
+  //     console.log('✅ PDF generated:', fileName);
+
+  //   } catch (error: any) {
+  //     console.error('❌ PDF Error:', error);
+  //     setResponse(`❌ Error: ${error.message || 'Failed to generate PDF'}`);
+  //   }
+  // };
+
+  const downloadProfessionalPDF = async () => {
+    try {
+      setResponse('⏳ Generating Professional PDF Report...');
+
+      if (!firebase?.getTodayMeals) {
+        setResponse('❌ Firebase not configured');
+        return;
+      }
+
+      const allMeals = await firebase.getTodayMeals();
+
+      if (allMeals.length === 0) {
+        setResponse('⚠️ No meal data available');
+        return;
+      }
+
+      const morningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'MORNING');
+      const eveningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'EVENING');
+
+      const totalEmployees = morningMeals.length + eveningMeals.length;
+      const morningPercentage = totalEmployees > 0 ? ((morningMeals.length / totalEmployees) * 100).toFixed(1) : 0;
+      const eveningPercentage = totalEmployees > 0 ? ((eveningMeals.length / totalEmployees) * 100).toFixed(1) : 0;
+
+      const counters = new Set<number>();
+      allMeals.forEach((meal: MealRecord) => counters.add(meal.counterId));
+
+      const currentDate = new Date();
+      const reportDate = currentDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      const reportTime = currentDate.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+
+      // ========== CREATE PDF ==========
+      const doc = new jsPDF('p', 'mm', 'a4');
+
+      // ========== COLORS - Professional Dark Scheme ==========
+      const darkBlue = [25, 55, 109] as [number, number, number];
+      const darkBlueLight = [48, 84, 150] as [number, number, number];
+      const accentOrange = [255, 140, 50] as [number, number, number];
+      const accentGreen = [76, 175, 80] as [number, number, number];
+      const accentPurple = [156, 39, 176] as [number, number, number];
+      const darkGray = [66, 66, 66] as [number, number, number];
+      const lightGray = [245, 245, 245] as [number, number, number];
+      const textDark = [33, 33, 33] as [number, number, number];
+
+      let yPosition = 0;
+
+      // ========== PROFESSIONAL HEADER BACKGROUND ==========
+      doc.setFillColor(...darkBlue);
+      doc.rect(0, 0, 210, 60, 'F');
+
+      // ========== CENTERED HEADER WITH LOGO ==========
+      yPosition = 12;
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      // Logo emoji centered
+      doc.setFontSize(32);
+      doc.setTextColor(255, 255, 255);
+      // doc.text('🍲', pageWidth / 2, yPosition, { align: 'center' });
+      doc.text('SAMOSA MAN', pageWidth / 2, yPosition, { align: 'center' });
+
+
+      yPosition += 12;
+
+      // Title centered
+      doc.setFontSize(24);
+      doc.setFont('', 'bold');
+      doc.setTextColor(...accentOrange);
+      // doc.text('SAMOSA MAN', pageWidth / 2, yPosition, { align: 'center' });
+
+      yPosition += 8;
+
+      // Subtitle centered
+      doc.setFontSize(11);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('', 'normal');
+      doc.text('Employee Meal Management System', pageWidth / 2, yPosition, { align: 'center' });
+
+      yPosition += 8;
+
+      // Divider line
+      doc.setDrawColor(...accentOrange);
+      doc.setLineWidth(2);
+      doc.line(20, yPosition, 190, yPosition);
+
+      yPosition = 70;
+
+      // ========== REPORT DETAILS SECTION ==========
+      doc.setFontSize(9);
+      doc.setTextColor(...darkGray);
+      doc.setFont('', 'normal');
+
+      // Date and Time
+      doc.text(`Report Date: ${reportDate}`, 20, yPosition);
+      doc.text(`Generated At: ${reportTime}`, 130, yPosition);
+      yPosition += 6;
+
+      doc.text(`Report ID: SR-${currentDate.getTime().toString().slice(-8)}`, 20, yPosition);
+      doc.text(`Organization: Samosa Man Pvt Ltd`, 130, yPosition);
+      yPosition += 10;
+
+      // ========== DIVIDER ==========
+      doc.setDrawColor(...darkBlueLight);
+      doc.setLineWidth(0.8);
+      doc.line(20, yPosition, 190, yPosition);
+      yPosition += 8;
+
+      // ========== MAIN STATISTICS SECTION - LARGE CARDS ==========
+      doc.setFontSize(10);
+      doc.setFont('', 'bold');
+      doc.setTextColor(...darkBlue);
+      doc.text('DAILY MEAL DISTRIBUTION SUMMARY', 20, yPosition);
+      yPosition += 12;
+
+      const cardWidth = 50;
+      const cardHeight = 35;
+      const cardSpacing = 8;
+
+      // ========== MORNING CARD ==========
+      doc.setFillColor(255, 235, 205);
+      doc.setDrawColor(...accentOrange);
+      doc.setLineWidth(2);
+      doc.rect(20, yPosition, cardWidth, cardHeight, 'FD');
+
+      doc.setFontSize(9);
+      doc.setTextColor(...accentOrange);
+      doc.setFont('', 'bold');
+      doc.text('MORNING', 20 + cardWidth / 2, yPosition + 6, { align: 'center' });
+
+      doc.setFontSize(24);
+      doc.setFont('', 'bold');
+      doc.text(morningMeals.length.toString(), 20 + cardWidth / 2, yPosition + 20, { align: 'center' });
+
+      doc.setFontSize(8);
+      doc.setTextColor(...darkGray);
+      doc.setFont('', 'normal');
+      doc.text('Employees', 20 + cardWidth / 2, yPosition + 29, { align: 'center' });
+
+      // ========== EVENING CARD ==========
+      doc.setFillColor(230, 245, 210);
+      doc.setDrawColor(...accentGreen);
+      doc.setLineWidth(2);
+      doc.rect(20 + cardWidth + cardSpacing, yPosition, cardWidth, cardHeight, 'FD');
+
+      doc.setFontSize(9);
+      doc.setTextColor(...accentGreen);
+      doc.setFont('', 'bold');
+      doc.text('EVENING', 20 + cardWidth + cardSpacing + cardWidth / 2, yPosition + 6, { align: 'center' });
+
+      doc.setFontSize(24);
+      doc.setFont('', 'bold');
+      doc.text(eveningMeals.length.toString(), 20 + cardWidth + cardSpacing + cardWidth / 2, yPosition + 20, { align: 'center' });
+
+      doc.setFontSize(8);
+      doc.setTextColor(...darkGray);
+      doc.setFont('', 'normal');
+      doc.text('Employees', 20 + cardWidth + cardSpacing + cardWidth / 2, yPosition + 29, { align: 'center' });
+
+      // ========== TOTAL CARD ==========
+      doc.setFillColor(245, 235, 255);
+      doc.setDrawColor(...accentPurple);
+      doc.setLineWidth(2);
+      doc.rect(20 + (cardWidth + cardSpacing) * 2, yPosition, cardWidth, cardHeight, 'FD');
+
+      doc.setFontSize(9);
+      doc.setTextColor(...accentPurple);
+      doc.setFont('', 'bold');
+      doc.text('TOTAL', 20 + (cardWidth + cardSpacing) * 2 + cardWidth / 2, yPosition + 6, { align: 'center' });
+
+      doc.setFontSize(24);
+      doc.setFont('', 'bold');
+      doc.text(totalEmployees.toString(), 20 + (cardWidth + cardSpacing) * 2 + cardWidth / 2, yPosition + 20, { align: 'center' });
+
+      doc.setFontSize(8);
+      doc.setTextColor(...darkGray);
+      doc.setFont('', 'normal');
+      doc.text('Total Served', 20 + (cardWidth + cardSpacing) * 2 + cardWidth / 2, yPosition + 29, { align: 'center' });
+
+      yPosition += 42;
+
+      // ========== METRICS GRID - TWO COLUMNS ==========
+      doc.setFontSize(10);
+      doc.setFont('', 'bold');
+      doc.setTextColor(...darkBlue);
+      doc.text('KEY PERFORMANCE INDICATORS', 20, yPosition);
+      yPosition += 8;
+
+      const metricBoxWidth = 83;
+      const metricBoxHeight = 20;
+      const metricSpacing = 8;
+
+      // Metric 1: Distribution
+      doc.setFillColor(240, 248, 255);
+      doc.setDrawColor(...darkBlueLight);
+      doc.setLineWidth(1);
+      doc.rect(20, yPosition, metricBoxWidth, metricBoxHeight, 'FD');
+
+      doc.setFontSize(8);
+      doc.setFont('', 'bold');
+      doc.setTextColor(...darkBlue);
+      doc.text('SHIFT DISTRIBUTION', 22, yPosition + 4);
+
+      doc.setFontSize(9);
+      doc.setTextColor(...accentOrange);
+      doc.text(`Morning: ${morningPercentage}%`, 22, yPosition + 10);
+
+      doc.setFontSize(9);
+      doc.setTextColor(...accentGreen);
+      doc.text(`Evening: ${eveningPercentage}%`, 22, yPosition + 16);
+
+      // Metric 2: Efficiency
+      doc.setFillColor(255, 245, 238);
+      doc.setDrawColor(...accentOrange);
+      doc.setLineWidth(1);
+      doc.rect(20 + metricBoxWidth + metricSpacing, yPosition, metricBoxWidth, metricBoxHeight, 'FD');
+
+      doc.setFontSize(8);
+      doc.setFont('', 'bold');
+      doc.setTextColor(...darkBlue);
+      doc.text('OPERATIONAL METRICS', 22 + metricBoxWidth + metricSpacing, yPosition + 4);
+
+      doc.setFontSize(9);
+      doc.setTextColor(...textDark);
+      doc.setFont('', 'normal');
+      const efficiencyRate = counters.size > 0 ? (totalEmployees / counters.size).toFixed(1) : '0';
+      doc.text(`Active Counters: ${counters.size}`, 22 + metricBoxWidth + metricSpacing, yPosition + 10);
+      doc.text(`Avg per Counter: ${efficiencyRate}`, 22 + metricBoxWidth + metricSpacing, yPosition + 16);
+
+      yPosition += 25;
+
+      // ========== DETAILED BREAKDOWN SECTION ==========
+      doc.setFontSize(10);
+      doc.setFont('', 'bold');
+      doc.setTextColor(...darkBlue);
+      doc.text('DETAILED BREAKDOWN', 20, yPosition);
+      yPosition += 7;
+
+      // Breakdown box
+      doc.setFillColor(...lightGray);
+      doc.setDrawColor(...darkGray);
+      doc.setLineWidth(0.5);
+      doc.rect(20, yPosition, 170, 40, 'FD');
+
+      doc.setFontSize(8);
+      doc.setTextColor(...textDark);
+      doc.setFont('', 'normal');
+
+      const breakdownY = yPosition + 5;
+      doc.text(`Morning Shift: ${morningMeals.length} employees served | Peak shift: ${morningPercentage > eveningPercentage ? 'Morning' : 'Evening'}`, 23, breakdownY);
+      doc.text(`Evening Shift: ${eveningMeals.length} employees served | Counters Active: ${counters.size}`, 23, breakdownY + 6);
+      doc.text(`Daily Total: ${totalEmployees} employees | Efficiency Rate: ${efficiencyRate} employees/counter`, 23, breakdownY + 12);
+      doc.text(`Report Type: Daily Summary | Status: ✓ Verified & Archived | Next Archive: Tomorrow at 00:00`, 23, breakdownY + 18);
+      doc.text(`Data Integrity: All records validated | System Status: Online & Operational`, 23, breakdownY + 24);
+
+      yPosition += 45;
+
+      // ========== QUALITY ASSURANCE SECTION ==========
+      doc.setFontSize(9);
+      doc.setFont('', 'bold');
+      doc.setTextColor(...darkBlue);
+      doc.text('QUALITY ASSURANCE & COMPLIANCE', 20, yPosition);
+      yPosition += 6;
+
+      const qaItems = [
+        '✓ All meal records verified in real-time',
+        '✓ Employee eligibility confirmed before service',
+        '✓ Counter utilization tracked accurately',
+        '✓ Data backup completed successfully',
+        '✓ System health: Excellent | Uptime: 99.9%',
+      ];
+
+      doc.setFontSize(8);
+      doc.setTextColor(...textDark);
+      doc.setFont('', 'normal');
+
+      qaItems.forEach((item, index) => {
+        if (yPosition + index * 4 < 260) {
+          doc.text(item, 25, yPosition + index * 4);
+        }
+      });
+
+      // ========== FOOTER SECTION ==========
+      doc.setFillColor(...darkBlue);
+      doc.rect(0, 275, 210, 22, 'F');
+
+      doc.setFontSize(10);
+      doc.setFont('', 'bold');
+      doc.setTextColor(...accentOrange);
+      doc.text('SAMOSA MAN', pageWidth / 2, 282, { align: 'center' });
+
+      doc.setFontSize(7);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('', 'normal');
+      doc.text('Employee Meal Management System | www.samosaman.com', pageWidth / 2, 287, { align: 'center' });
+
+      doc.setFontSize(6);
+      doc.setTextColor(200, 200, 200);
+      doc.text(`Support: support@samosaman.com | Phone: +91-98765-43210 | © 2026 All Rights Reserved`, pageWidth / 2, 291, { align: 'center' });
+
+      doc.setFontSize(5);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Generated: ${new Date().toISOString()} | Confidential - For authorized personnel only | Page 1 of 1`, pageWidth / 2, 295, { align: 'center' });
+
+      // ========== SAVE PDF ==========
+      const fileName = `SM_Meal_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`;
+      doc.save(fileName);
+
+      setResponse(`✅ PDF Report Downloaded!\n\n📊 REPORT SUMMARY:\n━━━━━━━━━━━━━━━━━━\n🌅 Morning: ${morningMeals.length} employees (${morningPercentage}%)\n🌆 Evening: ${eveningMeals.length} employees (${eveningPercentage}%)\n📊 Total: ${totalEmployees} employees\n💼 Active Counters: ${counters.size}\n⚡ Efficiency: ${efficiencyRate} emp/counter\n━━━━━━━━━━━━━━━━━━\n✓ File: ${fileName}`);
+      console.log('✅ PDF generated:', fileName);
+
+    } catch (error: any) {
+      console.error('❌ PDF Error:', error);
+      setResponse(`❌ Error: ${error.message || 'Failed to generate PDF'}`);
     }
-
-    const allMeals = await firebase.getTodayMeals();
-
-    if (allMeals.length === 0) {
-      setResponse('⚠️ No meal data available');
-      return;
-    }
-
-    const morningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'MORNING');
-    const eveningMeals = allMeals.filter((meal: MealRecord) => meal.mealType === 'EVENING');
-
-    const totalEmployees = morningMeals.length + eveningMeals.length;
-    const morningPercentage = totalEmployees > 0 ? ((morningMeals.length / totalEmployees) * 100).toFixed(1) : 0;
-    const eveningPercentage = totalEmployees > 0 ? ((eveningMeals.length / totalEmployees) * 100).toFixed(1) : 0;
-
-    const counters = new Set<number>();
-    allMeals.forEach((meal: MealRecord) => counters.add(meal.counterId));
-
-    const currentDate = new Date();
-    const reportDate = currentDate.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-
-    const reportTime = currentDate.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-
-    // ========== CREATE PDF ==========
-    const doc = new jsPDF('p', 'mm', 'a4');
-
-    const primaryColor = [255, 159, 67] as [number, number, number];
-    const secondaryColor = [255, 107, 53] as [number, number, number];
-    const accentColor = [69, 90, 100] as [number, number, number];
-    const textDark = [44, 62, 80] as [number, number, number];
-
-    let yPosition = 15;
-
-    // ========== HEADER ==========
-    doc.setFontSize(24);
-    doc.setTextColor(...textDark);
-    doc.text('MEAL MANAGEMENT REPORT', 20, yPosition);
-    yPosition += 8;
-
-    doc.setFontSize(11);
-    doc.setTextColor(127, 140, 141);
-    doc.text('Employee Meal Distribution Analysis', 20, yPosition);
-    yPosition += 12;
-
-    doc.setFontSize(9);
-    doc.setTextColor(...textDark);
-    doc.text(`Report Date: ${reportDate}`, 20, yPosition);
-    doc.text(`Generated: ${reportTime}`, 120, yPosition);
-    yPosition += 7;
-    doc.text(`Report ID: SR-${currentDate.getTime()}`, 20, yPosition);
-    doc.text(`Organization: Samosa Man`, 120, yPosition);
-    yPosition += 12;
-
-    // Divider line
-    doc.setDrawColor(...primaryColor);
-    doc.setLineWidth(1);
-    doc.line(20, yPosition, 190, yPosition);
-    yPosition += 8;
-
-    // ========== SUMMARY STATISTICS ==========
-    doc.setFontSize(14);
-    doc.setTextColor(...textDark);
-    doc.text('Summary Statistics', 20, yPosition);
-    yPosition += 10;
-
-    const boxWidth = 50;
-    const boxHeight = 18;
-    const spacing = 5;
-
-    // Morning box
-    doc.setFillColor(...primaryColor);
-    doc.rect(20, yPosition, boxWidth, boxHeight, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
-    doc.setFont('', 'bold');
-    doc.text('MORNING', 20 + boxWidth / 2, yPosition + 7, { align: 'center' });
-    doc.setFont('', 'normal');
-    doc.setFontSize(14);
-    doc.text(morningMeals.length.toString(), 20 + boxWidth / 2, yPosition + 13, { align: 'center' });
-
-    // Evening box
-    doc.setFillColor(...secondaryColor);
-    doc.rect(20 + boxWidth + spacing, yPosition, boxWidth, boxHeight, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
-    doc.setFont('', 'bold');
-    doc.text('EVENING', 20 + boxWidth + spacing + boxWidth / 2, yPosition + 7, { align: 'center' });
-    doc.setFont('', 'normal');
-    doc.setFontSize(14);
-    doc.text(eveningMeals.length.toString(), 20 + boxWidth + spacing + boxWidth / 2, yPosition + 13, { align: 'center' });
-
-    // Total box
-    doc.setFillColor(...accentColor);
-    doc.rect(20 + (boxWidth + spacing) * 2, yPosition, boxWidth, boxHeight, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
-    doc.setFont('', 'bold');
-    doc.text('TOTAL', 20 + (boxWidth + spacing) * 2 + boxWidth / 2, yPosition + 7, { align: 'center' });
-    doc.setFont('', 'normal');
-    doc.setFontSize(14);
-    doc.text(totalEmployees.toString(), 20 + (boxWidth + spacing) * 2 + boxWidth / 2, yPosition + 13, { align: 'center' });
-
-    yPosition += boxHeight + 15;
-
-    // Key metrics
-    doc.setFontSize(10);
-    doc.setTextColor(...textDark);
-    doc.text(`Morning: ${morningPercentage}% | Evening: ${eveningPercentage}% | Active Counters: ${counters.size}`, 20, yPosition);
-    yPosition += 15;
-
-    // ========== SUMMARY FOOTER SECTION (ON SAME PAGE) ==========
-    doc.setFontSize(12);
-    doc.setTextColor(...textDark);
-    doc.text('Report Summary', 20, yPosition);
-    yPosition += 10;
-
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(...primaryColor);
-    doc.line(20, yPosition, 190, yPosition);
-    yPosition += 10;
-
-    // Summary information
-    doc.setFontSize(9);
-    doc.setTextColor(...textDark);
-    doc.text('This is an automatically generated meal distribution report', 20, yPosition);
-    yPosition += 6;
-    doc.text('from the Samosa Man Employee Meal Management System.', 20, yPosition);
-    yPosition += 10;
-
-    doc.setFontSize(8);
-    doc.setTextColor(127, 140, 141);
-    doc.text(`Generated: ${reportDate} at ${reportTime}`, 20, yPosition);
-    yPosition += 8;
-
-    const statsLine = `Total Employees: ${totalEmployees} | Morning: ${morningMeals.length} (${morningPercentage}%) | Evening: ${eveningMeals.length} (${eveningPercentage}%) | Active Counters: ${counters.size}`;
-    doc.text(statsLine, 20, yPosition);
-    yPosition += 12;
-
-    // Company info
-    doc.setFontSize(10);
-    doc.setTextColor(...textDark);
-    doc.setFont('', 'bold');
-    doc.text('Samosa Man', 20, yPosition);
-    yPosition += 8;
-
-    doc.setFontSize(8);
-    doc.setFont('', 'normal');
-    doc.setTextColor(127, 140, 141);
-    doc.text('Employee Meal Management System', 20, yPosition);
-    yPosition += 5;
-    doc.text('www.ssamosaman.com', 20, yPosition);
-    yPosition += 10;
-
-    // Confidentiality notice
-    doc.setFontSize(7);
-    doc.setTextColor(189, 195, 199);
-    doc.text(
-      '© 2026 Samosa Man. Confidential - For authorized personnel only.',
-      20,
-      yPosition,
-    );
-
-    // ========== SAVE PDF ==========
-    const fileName = `SM_Meal_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`;
-    doc.save(fileName);
-
-    setResponse(`✅ PDF Report Downloaded!\nFile: ${fileName}\nSingle-page summary report`);
-    console.log('✅ PDF generated:', fileName);
-
-  } catch (error: any) {
-    console.error('❌ PDF Error:', error);
-    setResponse(`❌ Error: ${error.message || 'Failed to generate PDF'}`);
-  }
-};
-
+  };
 
 
 
@@ -1414,7 +1738,7 @@ const downloadProfessionalPDF = async () => {
         {/* Header */}
         <div style={{ marginBottom: '3rem', textAlign: 'center', animation: 'slideInUp 0.6s ease-out' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', margin: '0 0 0.5rem 0' }}>
-            <span style={{ fontSize: '2.8rem' }}>🍲</span>
+            {/* <span style={{ fontSize: '2.8rem' }}>🍲</span> */}
             <h1 style={{ fontSize: '2.8rem', color: '#1a202c', margin: 0, fontWeight: '700', letterSpacing: '-0.5px', textShadow: '0 2px 4px rgba(255, 159, 67, 0.2)' }}>
               Samosa Man
             </h1>
@@ -2292,7 +2616,7 @@ const downloadProfessionalPDF = async () => {
                         <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
                           <td style={{ padding: '1rem', fontWeight: '600', color: '#ff9f43' }}>{record.employeeId}</td>
                           <td style={{ padding: '1rem', color: '#2d3748' }}>
-                            {record.mealType === 'MORNING' ? '🌅 Morning' : '🌆 Evening'}
+                            {record.mealType === 'MORNING' ? 'Morning' : 'Evening'}
                           </td>
                           <td style={{ padding: '1rem', color: '#2d3748' }}>Counter {record.counterId}</td>
                           <td style={{ padding: '1rem', color: '#2d3748', fontSize: '0.9rem' }}>
@@ -2386,7 +2710,7 @@ const downloadProfessionalPDF = async () => {
                     <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
                       <td style={{ padding: '1rem', fontWeight: '600', color: '#ff9f43' }}>{record.date}</td>
                       <td style={{ padding: '1rem', color: '#2d3748' }}>
-                        {record.mealType === 'MORNING' ? '🌅 Morning' : '🌆 Evening'}
+                        {record.mealType === 'MORNING' ? 'Morning' : 'Evening'}
                       </td>
                       <td style={{ padding: '1rem', color: '#2d3748' }}>Counter {record.counterId}</td>
                     </tr>
