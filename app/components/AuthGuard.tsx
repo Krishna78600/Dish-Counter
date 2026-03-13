@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, role } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -14,27 +14,48 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
     const isAuthRoute = pathname === '/login' || pathname === '/signup' || pathname === '/forgotpassword';
 
-    // NOT logged in
-    if (!user && !isAuthRoute) {
-      router.push('/login');
+    // NOT logged in — allow auth routes, redirect everything else to /login
+    if (!user) {
+      if (!isAuthRoute) {
+        router.push('/login');
+      }
       return;
     }
 
-    // Logged in
-    if (user && isAuthRoute) {
+    // Logged in — redirect away from auth routes
+    if (isAuthRoute) {
+      router.push(role === 'employee' ? '/employee' : '/');
+      return;
+    }
+
+    // Role-based route enforcement
+    if (role === 'employee' && pathname === '/') {
+      router.push('/employee');
+      return;
+    }
+
+    if (role === 'admin' && pathname === '/employee') {
       router.push('/');
       return;
     }
-  }, [user, loading, router, pathname]);
+  }, [user, loading, router, pathname, role]);
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <p>Loading...</p>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'linear-gradient(135deg, #fff8f0 0%, #ffe8d6 50%, #ffeaa7 100%)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'pulse 1.5s ease-in-out infinite' }}>🍲</div>
+          <p style={{ color: '#718096', fontWeight: '500', fontSize: '1rem' }}>Loading...</p>
+        </div>
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+          }
+        `}</style>
       </div>
     );
   }
 
-  // Only render children if authenticated (or if on an auth route and unauthenticated)
   return <>{children}</>;
 }

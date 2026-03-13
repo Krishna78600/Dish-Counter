@@ -391,3 +391,152 @@ export function initializeArchiveSchedule() {
     }, 24 * 60 * 60 * 1000);
   }, timeUntilMidnight);
 }
+
+// ============================================
+// TODAY'S MENU MANAGEMENT
+// ============================================
+export interface MenuItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  available: boolean;
+}
+
+export async function setTodayMenu(items: MenuItem[]): Promise<{ success: boolean; error?: string }> {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const menuRef = doc(db, 'menu', 'today');
+    await setDoc(menuRef, {
+      date: today,
+      items,
+      updatedAt: Timestamp.now(),
+    });
+    console.log(`✅ [MENU] Saved ${items.length} menu items for ${today}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('❌ [MENU] Error saving menu:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getTodayMenu(): Promise<MenuItem[]> {
+  try {
+    const menuRef = doc(db, 'menu', 'today');
+    const menuSnap = await getDoc(menuRef);
+
+    if (!menuSnap.exists()) {
+      console.log('📋 [MENU] No menu set for today');
+      return [];
+    }
+
+    const data = menuSnap.data();
+    const today = new Date().toISOString().split('T')[0];
+
+    if (data.date !== today) {
+      console.log('📋 [MENU] Menu is from a previous day');
+      return [];
+    }
+
+    console.log(`✅ [MENU] Found ${data.items?.length || 0} menu items`);
+    return data.items || [];
+  } catch (error) {
+    console.error('❌ [MENU] Error fetching menu:', error);
+    return [];
+  }
+}
+
+// ============================================
+// EMPLOYEE ORDERS
+// ============================================
+export interface OrderItem {
+  menuItemId: string;
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+export interface Order {
+  id?: string;
+  uid: string;
+  email: string;
+  items: OrderItem[];
+  total: number;
+  date: string;
+  timestamp: string;
+  status: 'pending' | 'confirmed' | 'ready';
+}
+
+export async function placeOrder(
+  uid: string,
+  email: string,
+  items: OrderItem[]
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    // Check if employee already ordered today
+    const existing = await getMyTodayOrder(uid);
+    if (existing) {
+      return { success: false, error: 'You have already placed an order today' };
+    }
+
+    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    await addDoc(collection(db, 'orders'), {
+      uid,
+      email,
+      items,
+      total,
+      date: today,
+      timestamp: new Date().toISOString(),
+      status: 'pending',
+    });
+
+    console.log(`✅ [ORDER] Order placed by ${email}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('❌ [ORDER] Error placing order:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getMyTodayOrder(uid: string): Promise<Order | null> {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const q = query(
+      collection(db, 'orders'),
+      where('uid', '==', uid),
+      where('date', '==', today)
+    );
+    const snap = await getDocs(q);
+
+    if (snap.empty) return null;
+
+    const docData = snap.docs[0];
+    return { id: docData.id, ...docData.data() } as Order;
+  } catch (error) {
+    console.error('❌ [ORDER] Error fetching order:', error);
+    return null;
+  }
+}
+
+export async function getTodayOrders(): Promise<Order[]> {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const q = query(
+      collection(db, 'orders'),
+      where('date', '==', today)
+    );
+    const snap = await getDocs(q);
+    const orders: Order[] = [];
+    snap.forEach((d) => {
+      orders.push({ id: d.id, ...d.data() } as Order);
+    });
+    return orders;
+  } catch (error) {
+    console.error('❌ [ORDER] Error fetching orders:', error);
+    return [];
+  }
+}

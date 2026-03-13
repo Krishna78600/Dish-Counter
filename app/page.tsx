@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
+import { setTodayMenu, getTodayMenu, MenuItem } from '../lib/firebase';
 
 // Mock types for Firebase (if actual Firebase import fails)
 interface MealRecord {
@@ -58,6 +59,16 @@ export default function MealManagement() {
 
   const [pdfDownloadTime, setPDFDownloadTime] = useState<string>('20:00');
   const [autoPDFDownloadEnabled, setAutoPDFDownloadEnabled] = useState<boolean>(true);
+
+  // ========== MENU MANAGEMENT STATE ==========
+  const [showMenuSection, setShowMenuSection] = useState(false);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemDescription, setNewItemDescription] = useState('');
+  const [newItemPrice, setNewItemPrice] = useState('');
+  const [newItemCategory, setNewItemCategory] = useState('Main Course');
+  const [menuSaving, setMenuSaving] = useState(false);
+  const [menuMessage, setMenuMessage] = useState('');
 
   // Update from localStorage only after component mounts (client-only)
   // ✅ UPDATED: Load both Excel AND PDF settings from localStorage
@@ -129,15 +140,59 @@ export default function MealManagement() {
 
   const initializeApp = async () => {
     try {
-      // if (firebase?.initializeArchiveSchedule) {
-      //   firebase.initializeArchiveSchedule();
-      // }
       await checkAndArchive();
       await loadTodayMeals();
+      await loadMenu();
     } catch (error) {
       console.error('Error initializing app:', error);
       setArchiveStatus('⚠️ Firebase not configured');
     }
+  };
+
+  const loadMenu = async () => {
+    try {
+      const items = await getTodayMenu();
+      setMenuItems(items);
+    } catch (error) {
+      console.error('Error loading menu:', error);
+    }
+  };
+
+  const handleAddMenuItem = () => {
+    if (!newItemName.trim()) return;
+    const newItem: MenuItem = {
+      id: Date.now().toString(),
+      name: newItemName.trim(),
+      description: newItemDescription.trim(),
+      price: parseFloat(newItemPrice) || 0,
+      category: newItemCategory,
+      available: true,
+    };
+    setMenuItems([...menuItems, newItem]);
+    setNewItemName('');
+    setNewItemDescription('');
+    setNewItemPrice('');
+    setNewItemCategory('Main Course');
+  };
+
+  const handleRemoveMenuItem = (id: string) => {
+    setMenuItems(menuItems.filter((item) => item.id !== id));
+  };
+
+  const handlePublishMenu = async () => {
+    setMenuSaving(true);
+    setMenuMessage('');
+    try {
+      const result = await setTodayMenu(menuItems);
+      if (result.success) {
+        setMenuMessage('✅ Menu published successfully! Employees can now see it.');
+      } else {
+        setMenuMessage(`❌ ${result.error}`);
+      }
+    } catch (error: any) {
+      setMenuMessage(`❌ ${error.message}`);
+    }
+    setMenuSaving(false);
   };
 
   const checkAndArchive = async () => {
@@ -2727,6 +2782,147 @@ export default function MealManagement() {
           )}
         </div>
       </div>
+
+      {/* ==================== TODAY'S MENU MANAGEMENT ==================== */}
+      <div style={{ background: 'rgba(255, 255, 255, 0.7)', borderRadius: '20px', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)', padding: '2rem', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.5)', animation: 'slideInUp 0.6s ease-out', marginTop: '2rem' }}>
+        <div
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+          onClick={() => setShowMenuSection(!showMenuSection)}
+        >
+          <h2 style={{ fontSize: '1.4rem', fontWeight: '700', color: '#1a202c', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>📋 Today&apos;s Menu Management</h2>
+          <span style={{ fontSize: '1.5rem', transition: 'transform 0.3s ease', transform: showMenuSection ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+        </div>
+
+        {showMenuSection && (
+          <div style={{ marginTop: '1.5rem' }}>
+            {/* Add New Item Form */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4a5568', marginBottom: '0.35rem' }}>Item Name *</label>
+                <input
+                  type="text"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="e.g. Full Dish"
+                  style={{ width: '100%', padding: '0.75rem', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '500', backgroundColor: '#f7fafc', transition: 'all 0.3s ease', boxSizing: 'border-box' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#ff9f43'; e.currentTarget.style.backgroundColor = '#fff'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.backgroundColor = '#f7fafc'; }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4a5568', marginBottom: '0.35rem' }}>Category</label>
+                <select
+                  value={newItemCategory}
+                  onChange={(e) => setNewItemCategory(e.target.value)}
+                  style={{ width: '100%', padding: '0.75rem', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '500', backgroundColor: '#f7fafc', boxSizing: 'border-box', cursor: 'pointer' }}
+                >
+                  <option value="Main Course">🍛 Main Course</option>
+                  <option value="Half Dish">🥘 Half Dish</option>
+                  <option value="Dal-Rice">🍚 Dal-Rice Plate</option>
+                  <option value="Snack">🥪 Snack</option>
+                  <option value="Beverage">☕ Beverage</option>
+                  <option value="Other">🍽️ Other</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4a5568', marginBottom: '0.35rem' }}>Description</label>
+                <input
+                  type="text"
+                  value={newItemDescription}
+                  onChange={(e) => setNewItemDescription(e.target.value)}
+                  placeholder="Brief description"
+                  style={{ width: '100%', padding: '0.75rem', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '500', backgroundColor: '#f7fafc', transition: 'all 0.3s ease', boxSizing: 'border-box' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#ff9f43'; e.currentTarget.style.backgroundColor = '#fff'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.backgroundColor = '#f7fafc'; }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#4a5568', marginBottom: '0.35rem' }}>Price (₹)</label>
+                <input
+                  type="number"
+                  value={newItemPrice}
+                  onChange={(e) => setNewItemPrice(e.target.value)}
+                  placeholder="0"
+                  style={{ width: '100%', padding: '0.75rem', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', fontWeight: '500', backgroundColor: '#f7fafc', transition: 'all 0.3s ease', boxSizing: 'border-box' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#ff9f43'; e.currentTarget.style.backgroundColor = '#fff'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.backgroundColor = '#f7fafc'; }}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleAddMenuItem}
+              disabled={!newItemName.trim()}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: !newItemName.trim() ? '#cbd5e0' : 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                cursor: !newItemName.trim() ? 'not-allowed' : 'pointer',
+                transition: 'all 0.3s ease',
+                marginBottom: '1.5rem',
+              }}
+            >
+              ➕ Add Item to Menu
+            </button>
+
+            {/* Current Menu Items */}
+            {menuItems.length > 0 && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#2d3748', marginBottom: '1rem' }}>Current Menu ({menuItems.length} items)</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+                  {menuItems.map((item) => (
+                    <div key={item.id} style={{ background: 'linear-gradient(135deg, #fff 0%, #f7fafc 100%)', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0', position: 'relative', transition: 'all 0.3s ease' }}>
+                      <button
+                        onClick={() => handleRemoveMenuItem(item.id)}
+                        style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'rgba(255, 99, 99, 0.1)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}
+                      >
+                        ✕
+                      </button>
+                      <div style={{ fontSize: '1rem', fontWeight: '700', color: '#1a202c', marginBottom: '0.25rem' }}>{item.name}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#718096', marginBottom: '0.5rem' }}>{item.description || 'No description'}</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: '600', color: '#ff9f43', background: 'rgba(255, 159, 67, 0.1)', padding: '0.2rem 0.6rem', borderRadius: '6px' }}>{item.category}</span>
+                        <span style={{ fontSize: '1rem', fontWeight: '700', color: '#2d3748' }}>₹{item.price}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Publish Button */}
+            <button
+              onClick={handlePublishMenu}
+              disabled={menuSaving || menuItems.length === 0}
+              style={{
+                padding: '0.875rem 2rem',
+                background: (menuSaving || menuItems.length === 0) ? '#cbd5e0' : 'linear-gradient(135deg, #ff9f43 0%, #ee5a2f 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '1rem',
+                fontWeight: '700',
+                cursor: (menuSaving || menuItems.length === 0) ? 'not-allowed' : 'pointer',
+                transition: 'all 0.3s ease',
+                width: '100%',
+              }}
+            >
+              {menuSaving ? '⏳ Publishing...' : `📢 Publish Menu to Employees (${menuItems.length} items)`}
+            </button>
+
+            {menuMessage && (
+              <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', borderRadius: '10px', background: menuMessage.startsWith('✅') ? 'rgba(72, 187, 120, 0.1)' : 'rgba(255, 99, 99, 0.1)', color: menuMessage.startsWith('✅') ? '#2f855a' : '#c53030', fontWeight: '500', fontSize: '0.9rem' }}>
+                {menuMessage}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div style={{
         textAlign: 'center',
         marginTop: '3rem',

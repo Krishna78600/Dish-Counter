@@ -4,13 +4,18 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logIn } from '../../lib/firebase';
+import { useAuth } from '../context/authcontext';
+
+type Role = 'admin' | 'employee';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<Role>('admin');
   const router = useRouter();
+  const { setRole } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +25,8 @@ export default function Login() {
     try {
       const result = await logIn(email, password);
       if (result.success) {
-        router.push('/');
+        setRole(selectedRole);
+        router.push(selectedRole === 'employee' ? '/employee' : '/');
       } else {
         setError(result.error || 'Failed to log in');
       }
@@ -61,15 +67,73 @@ export default function Login() {
         input:focus {
           outline: none !important;
         }
+
+        .role-btn {
+          flex: 1;
+          padding: 0.875rem 1rem;
+          border: 2px solid #e2e8f0;
+          border-radius: 14px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          background: #f7fafc;
+          color: #4a5568;
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .role-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+        }
+
+        .role-btn.active-admin {
+          background: linear-gradient(135deg, #ff9f43 0%, #ee5a2f 100%);
+          color: white;
+          border-color: transparent;
+          box-shadow: 0 8px 25px rgba(255, 159, 67, 0.35);
+          transform: translateY(-2px);
+        }
+
+        .role-btn.active-employee {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border-color: transparent;
+          box-shadow: 0 8px 25px rgba(102, 126, 234, 0.35);
+          transform: translateY(-2px);
+        }
       `}</style>
 
       {/* Main Card */}
       <div className="auth-card" style={{ background: 'rgba(255, 255, 255, 0.95)', borderRadius: '20px', boxShadow: '0 20px 100px rgba(0, 0, 0, 0.1)', padding: '3rem', maxWidth: '420px', width: '100%', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.5)' }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍲</div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1a202c', margin: '0 0 0.5rem 0', letterSpacing: '-0.5px' }}>Samosa Man</h1>
           <p style={{ fontSize: '0.9rem', color: '#718096', margin: '0', fontWeight: '500' }}>Welcome back to your meal system</p>
+        </div>
+
+        {/* Role Toggle */}
+        <div style={{ marginBottom: '1.75rem' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#2d3748', marginBottom: '0.625rem', letterSpacing: '0.3px' }}>Login as</label>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button
+              type="button"
+              className={`role-btn ${selectedRole === 'admin' ? 'active-admin' : ''}`}
+              onClick={() => setSelectedRole('admin')}
+            >
+              🛡️ Admin
+            </button>
+            <button
+              type="button"
+              className={`role-btn ${selectedRole === 'employee' ? 'active-employee' : ''}`}
+              onClick={() => setSelectedRole('employee')}
+            >
+              👤 Employee
+            </button>
+          </div>
         </div>
 
         {/* Error Message */}
@@ -102,9 +166,9 @@ export default function Login() {
                 boxSizing: 'border-box',
               }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#ff9f43';
+                e.currentTarget.style.borderColor = selectedRole === 'employee' ? '#667eea' : '#ff9f43';
                 e.currentTarget.style.backgroundColor = '#fff';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255, 159, 67, 0.1)';
+                e.currentTarget.style.boxShadow = selectedRole === 'employee' ? '0 0 0 3px rgba(102, 126, 234, 0.1)' : '0 0 0 3px rgba(255, 159, 67, 0.1)';
               }}
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = '#e2e8f0';
@@ -118,7 +182,7 @@ export default function Login() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#2d3748', letterSpacing: '0.3px' }}>Password</label>
-              <Link href="/forgot-password" style={{ fontSize: '0.8rem', color: '#ff9f43', textDecoration: 'none', fontWeight: '600', borderBottom: '1px solid transparent', transition: 'all 0.2s ease' }} onMouseEnter={(e) => (e.currentTarget.style.borderBottomColor = '#ff9f43')} onMouseLeave={(e) => (e.currentTarget.style.borderBottomColor = 'transparent')}>
+              <Link href="/forgot-password" style={{ fontSize: '0.8rem', color: selectedRole === 'employee' ? '#667eea' : '#ff9f43', textDecoration: 'none', fontWeight: '600' }}>
                 Forgot?
               </Link>
             </div>
@@ -140,9 +204,9 @@ export default function Login() {
                 boxSizing: 'border-box',
               }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#ff9f43';
+                e.currentTarget.style.borderColor = selectedRole === 'employee' ? '#667eea' : '#ff9f43';
                 e.currentTarget.style.backgroundColor = '#fff';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255, 159, 67, 0.1)';
+                e.currentTarget.style.boxShadow = selectedRole === 'employee' ? '0 0 0 3px rgba(102, 126, 234, 0.1)' : '0 0 0 3px rgba(255, 159, 67, 0.1)';
               }}
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = '#e2e8f0';
@@ -158,7 +222,7 @@ export default function Login() {
             disabled={loading}
             style={{
               padding: '0.875rem 1.5rem',
-              background: loading ? '#cbd5e0' : 'linear-gradient(135deg, #ff9f43 0%, #ee5a2f 100%)',
+              background: loading ? '#cbd5e0' : (selectedRole === 'employee' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'linear-gradient(135deg, #ff9f43 0%, #ee5a2f 100%)'),
               color: 'white',
               border: 'none',
               borderRadius: '12px',
@@ -173,7 +237,7 @@ export default function Login() {
             onMouseEnter={(e) => {
               if (!loading) {
                 e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 10px 30px rgba(255, 159, 67, 0.4)';
+                e.currentTarget.style.boxShadow = selectedRole === 'employee' ? '0 10px 30px rgba(102, 126, 234, 0.4)' : '0 10px 30px rgba(255, 159, 67, 0.4)';
               }
             }}
             onMouseLeave={(e) => {
@@ -183,7 +247,7 @@ export default function Login() {
               }
             }}
           >
-            {loading ? '⏳ Signing in...' : '🔓 Sign In'}
+            {loading ? '⏳ Signing in...' : (selectedRole === 'employee' ? '👤 Sign In as Employee' : '🛡️ Sign In as Admin')}
           </button>
         </form>
 
@@ -196,8 +260,8 @@ export default function Login() {
 
         {/* Sign Up Link */}
         <p style={{ textAlign: 'center', fontSize: '0.9rem', color: '#4a5568', margin: '0' }}>
-          Don't have an account?{' '}
-          <Link href="/signup" style={{ color: '#ff9f43', fontWeight: '700', textDecoration: 'none', borderBottom: '2px solid transparent', transition: 'all 0.2s ease', paddingBottom: '2px' }} onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#ff9f43')} onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'transparent')}>
+          Don&apos;t have an account?{' '}
+          <Link href="/signup" style={{ color: selectedRole === 'employee' ? '#667eea' : '#ff9f43', fontWeight: '700', textDecoration: 'none', borderBottom: '2px solid transparent', transition: 'all 0.2s ease', paddingBottom: '2px' }} onMouseEnter={(e) => (e.currentTarget.style.borderColor = selectedRole === 'employee' ? '#667eea' : '#ff9f43')} onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'transparent')}>
             Create One
           </Link>
         </p>
