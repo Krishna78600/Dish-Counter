@@ -1,6 +1,7 @@
 // app/layout.tsx
 import type { Metadata } from "next";
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context/authcontext';
+import AuthGuard from './components/AuthGuard';
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AuthProvider>
-          {children}
+          <AuthGuard>{children}</AuthGuard>
         </AuthProvider>
       </body>
     </html>
